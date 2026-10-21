@@ -1,4 +1,5 @@
 # Local environment variables and secrets
+/rule/
 .env
 .env.*
 !.env.example
