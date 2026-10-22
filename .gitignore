@@ -32,3 +32,6 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Backend test artifacts
+.pytest-tmp/

@@ -1,0 +1,192 @@
+"""Local hackathon API. Simulated roles are not production authentication."""
+from contextlib import asynccontextmanager
+from urllib.parse import quote
+
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
+
+from .config import Settings
+from .db import build_engine, make_session_factory
+from .models import ActivityEvent, ApprovedSnapshot, Questionnaire
+from .schemas import ActivitiesInput, ApprovalInput, DeclarationInput, HandoffInput, QuestionnaireInput, RecalculateInput, ReviewInput
+from .service import MAX_FILE, Workspace, row
+from .storage import StorageError, SupabaseStorage
+
+
+def create_app(*, settings=None, session_factory=None, storage=None):
+    settings = settings or Settings.from_env()
+    configuration_error = None
+    engine = None
+    if session_factory is None:
+        try:
+            settings.validate()
+            engine = build_engine(settings.database_url)
+            session_factory = make_session_factory(engine)
+        except ValueError as error:
+            configuration_error = str(error)
+    owned_storage = storage is None
+    if storage is None and not configuration_error:
+        storage = SupabaseStorage(settings.supabase_url, settings.supabase_server_key, settings.storage_bucket)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        yield
+        if engine:
+            engine.dispose()
+        if owned_storage and storage is not None:
+            storage.client.close()
+
+    api = FastAPI(title='ESG Passport API', version='1.0.0', lifespan=lifespan)
+    api.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_origin],
+                       allow_methods=['GET', 'POST', 'PUT'], allow_headers=['Content-Type', 'X-Demo-Role'])
+    api.state.settings = settings
+
+    def session():
+        if configuration_error or session_factory is None:
+            raise HTTPException(503, configuration_error or 'Backend storage is not configured.')
+        with session_factory() as db:
+            try:
+                yield db
+            finally:
+                db.rollback()
+
+    def role(x_demo_role: str | None = Header(default=None)):
+        if x_demo_role is None:
+            raise HTTPException(401, 'Select a simulated Owner or Admin clerk role.')
+        if x_demo_role not in ('owner', 'clerk'):
+            raise HTTPException(403, 'This action requires the Owner or Admin clerk role.')
+        return x_demo_role
+
+    def workspace(db=Depends(session), actor_role=Depends(role)):
+        return Workspace(db, storage, settings, actor_role)
+
+    def customer_workspace(db=Depends(session)):
+        return Workspace(db, storage, settings, 'customer')
+
+    @api.exception_handler(SQLAlchemyError)
+    def database_error(request, error):
+        return JSONResponse(status_code=503, content={'detail': 'Database unavailable. Check the backend connection and run its migrations.'})
+
+    @api.exception_handler(StorageError)
+    def storage_error(request, error):
+        return JSONResponse(status_code=503, content={'detail': 'Evidence storage unavailable. Check the private bucket and backend Supabase settings.'})
+
+    @api.get('/health')
+    def health():
+        if configuration_error:
+            return JSONResponse(status_code=503, content={'status': 'not_configured', 'detail': configuration_error})
+        try:
+            with session_factory() as db:
+                db.execute(text('SELECT 1'))
+            return {'status': 'ok', 'synthetic_only': True, 'ai_enabled': False}
+        except SQLAlchemyError:
+            return JSONResponse(status_code=503, content={'status': 'unavailable', 'detail': 'Cannot connect to Supabase Postgres.'})
+
+    @api.get('/profile')
+    def profile(work=Depends(workspace)):
+        return work.profile()
+
+    @api.post('/profile/recalculate')
+    def recalculate(body: RecalculateInput, work=Depends(workspace)):
+        work.company(lock=True)
+        work.period(body.period)
+        result = work.profile()
+        work.log('profile_calculated', body.period, 'Calculated from confirmed records and versioned factors.')
+        work.db.commit()
+        return result
+
+    @api.get('/documents')
+    def documents(work=Depends(workspace)):
+        work.company()
+        return work.documents()
+
+    @api.post('/documents', status_code=201)
+    def upload(file: UploadFile = File(), type: str = Form(), work=Depends(workspace)):
+        content = file.file.read(MAX_FILE + 1)
+        return work.upload(file.filename, type, content, file.content_type)
+
+    @api.get('/documents/{document_id}')
+    def document(document_id: str, work=Depends(workspace)):
+        return work.serialize_document(work.document(document_id))
+
+    def file_response(result):
+        content, mime, name = result
+        return Response(content=content, media_type=mime, headers={
+            'Content-Disposition': f"inline; filename*=UTF-8''{quote(name, safe='')}",
+            'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
+
+    @api.get('/documents/{document_id}/file')
+    def document_file(document_id: str, work=Depends(workspace)):
+        return file_response(work.file(document_id))
+
+    @api.put('/documents/{document_id}/activities')
+    def activities(document_id: str, body: ActivitiesInput, work=Depends(workspace)):
+        return work.save_activities(document_id, body)
+
+    @api.get('/declarations')
+    def declarations(work=Depends(workspace)):
+        return work.declarations()
+
+    @api.put('/declarations/{code}')
+    def declaration(code: str, body: DeclarationInput, work=Depends(workspace)):
+        return work.save_declaration(code, body)
+
+    @api.get('/questionnaires')
+    def requests(work=Depends(workspace)):
+        return [work.serialize_request(request) for request in work.db.scalars(select(Questionnaire).where(
+            Questionnaire.company_id == settings.company_id).order_by(Questionnaire.created_at))]
+
+    @api.post('/questionnaires', status_code=201)
+    def create_request(body: QuestionnaireInput, work=Depends(workspace)):
+        return work.create_request(body)
+
+    @api.get('/questionnaires/{identifier}')
+    def request(identifier: str, work=Depends(workspace)):
+        return work.serialize_request(work.questionnaire(identifier))
+
+    @api.post('/questionnaires/{identifier}/map')
+    def map_request(identifier: str, work=Depends(workspace)):
+        return work.map_request(identifier)
+
+    @api.put('/questions/{identifier}/review')
+    def review(identifier: str, body: ReviewInput, work=Depends(workspace)):
+        return work.review_question(identifier, body)
+
+    @api.put('/questionnaires/{identifier}')
+    def handoff(identifier: str, body: HandoffInput, work=Depends(workspace)):
+        return work.handoff(identifier)
+
+    @api.post('/questionnaires/{identifier}/approve-share')
+    def approve(identifier: str, body: ApprovalInput, work=Depends(workspace)):
+        return work.approve(identifier, body)
+
+    @api.get('/shares')
+    def shares(work=Depends(workspace)):
+        work.require_owner()
+        return [work.serialize_pack(pack) for pack in work.db.scalars(select(ApprovedSnapshot).where(
+            ApprovedSnapshot.company_id == settings.company_id).order_by(ApprovedSnapshot.created_at.desc()))]
+
+    @api.get('/shares/{token}')
+    def share(token: str, work=Depends(customer_workspace)):
+        return work.get_pack(token)
+
+    @api.get('/shares/{token}/evidence/{document_id}')
+    def shared_file(token: str, document_id: str, work=Depends(customer_workspace)):
+        return file_response(work.file(document_id, token))
+
+    @api.get('/activity-log')
+    def activity_log(work=Depends(workspace)):
+        return [row(event) for event in work.db.scalars(select(ActivityEvent).where(
+            ActivityEvent.company_id == settings.company_id).order_by(ActivityEvent.time.desc()))]
+
+    @api.post('/demo/reset')
+    def reset(work=Depends(workspace)):
+        return work.reset()
+
+    return api
+
+
+app = create_app()

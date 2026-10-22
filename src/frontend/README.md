@@ -1,17 +1,20 @@
 # ESG Passport frontend
 
-Next.js frontend for the ESG Passport workspace. No separate service, Python runtime, API URL or AI key is required.
+Next.js workspace connected to the Python API and Supabase database/storage. The UI never falls back to browser fixtures or reads/writes the previous browser demo database.
 
 ## Run
 
-From this frontend folder:
+Start and configure the backend first using its README. From this frontend folder:
 
 ```powershell
+Copy-Item .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. For a production preview: run `npm run build`, then `npm start`.
+Open http://127.0.0.1:3000. `NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000`. Change it in `.env.local` if necessary and restart the frontend; Next.js embeds public variables at build time. The backend CORS origins must include the frontend origin. Never put Supabase service keys in frontend environment variables.
+
+For a production preview run `npm run build`, then `npm start`.
 
 ## Check
 
@@ -19,13 +22,12 @@ Open http://127.0.0.1:3000. For a production preview: run `npm run build`, then 
 - `npm run typecheck`
 - `npm run build`
 
-## Local UI behavior
+## Behavior and access
 
-- Includes synthetic September bills, declarations and two questionnaires.
-- All interactions use browser-side fixtures; no OCR, live AI, server API, authentication or real sharing is provided.
-- Uploaded files stay local. Enter their quantities manually; automatic extraction is not connected, so no extraction action is exposed.
-- Browser storage retains edits and preview snapshots on this browser and origin. If storage is unavailable, the demo lasts for the current page session.
-- Demo links work only in the same browser and origin. They are not secure or externally accessible customer links.
-- The role switch demonstrates Owner, clerk and customer screens. It is not an access-control boundary.
-- Use Workspace help → Restore sample records to start over.
-- Browser arithmetic illustrates the UI; this build is not a reporting or compliance system.
+- The backend provides fictional September 2026 seed records. Quantities from newly uploaded bills are entered and confirmed manually. Matching uses question wording; no live AI or OCR is connected.
+- Records, changes, declarations and approved snapshots persist through Supabase on the backend. Original source files use Supabase Storage. Backend configuration or connection failures appear with retry/setup guidance; no fixture data is substituted.
+- Internal requests send `X-Demo-Role` for the selected owner, clerk or customer. This is simulated role authorization for a demo, not account authentication. No browser credentials are sent.
+- Internal source previews fetch the role-protected document file as a temporary blob URL. Public pack and selected evidence routes use their share token without a role header. The backend enforces which files the token can access.
+- Pack links use the frontend origin and open in another browser against the same backend. With the default localhost addresses, they work only on the same computer while both servers are running. External access requires reachable frontend/API addresses and appropriate backend CORS configuration.
+- Workspace help → Restore sample records calls the server's demo reset. It works only when the backend enables reset and affects the server demo workspace.
+- The previous browser-only demo data is left untouched and unused. This application is not a certification or legal assurance system.

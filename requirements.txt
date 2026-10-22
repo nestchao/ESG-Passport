@@ -1,2 +1,2 @@
-# Add Python dependencies here once the application stack is selected.
-# No third-party packages are required by this starter structure.
+# Backend dependencies. The Next.js frontend uses src/frontend/package.json.
+-r src/backend/requirements.txt
