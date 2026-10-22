@@ -206,6 +206,11 @@ class Workspace:
         self.period(body.period)
         old_period = doc.period
         doc.name, doc.period = body.name, body.period
+        if body.type is not None and body.type != doc.type:
+            old_type = doc.type
+            doc.type = body.type
+            self.log('document_reclassified', doc.id,
+                     f'Document category corrected from {old_type} to {doc.type}; reconfirmation required.', doc.period)
         return self.save_activities(document_id, body, confirmed=False, old_period=old_period)
 
     def archive_document(self, document_id, body, *, restore=False):

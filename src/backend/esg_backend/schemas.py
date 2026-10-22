@@ -78,6 +78,7 @@ class RecalculateInput(Input):
 
 
 class DocumentUpdateInput(Input):
+    type: Literal['electricity', 'diesel', 'petrol', 'water', 'waste'] | None = None
     name: str = Field(min_length=1, max_length=255)
     period: Period
     activities: list[ActivityInput] = Field(max_length=20)

@@ -53,8 +53,8 @@ export function periodPath(path,period,extra={}) {
   }
   return `${pathname}${query.size ? `?${query}` : ''}${hash}`;
 }
-export function recordDraftKey({name,period,activities=[]}) {
-  return JSON.stringify([name ?? '',period ?? '',activityKey(activities)]);
+export function recordDraftKey({name,period,type,activities=[]}) {
+  return JSON.stringify([name ?? '',period ?? '',type ?? '',activityKey(activities)]);
 }
 export function validateRecordMetadata({name,period}) {
   const errors = {};
