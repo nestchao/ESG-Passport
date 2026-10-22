@@ -1,11 +1,13 @@
 import { ArrowRight, Check, ChevronRight, FileText, Plus, ShieldCheck } from 'lucide-react';
 
+import { recentRequests } from './presentation.mjs';
+
 type Data = Record<string, any>;
 type Props = {
   readiness: Data; breakdown: Data; documents: Data[]; requests: Data[]; gaps: Data[];
   periodLabel: string; titles: Record<string, string>; onUpload: () => void;
   onReview: (doc: Data) => void; onRecords: () => void;
-  onRequest: (request: Data) => void; onGap: (code: string) => void;
+  onRequest: (request: Data) => void; onAllRequests: () => void; onGap: (code: string) => void;
 };
 
 export function FlowSteps({ current, customer = false }: { current: number; customer?: boolean }) {
@@ -38,7 +40,7 @@ export function DesktopOverview(p: Props) {
       </section>
       <div className="snapshot-actions">
         <section className="panel next-task"><h2>One check moves you forward</h2><span className="status-tag attention">{next ? 'Needs your review' : 'Monthly records reviewed'}</span><p>{next ? 'Compare the original bill with the recorded quantities. Confirm only what the evidence supports.' : 'Your records are ready to reuse. Review remaining gaps or open a customer questionnaire.'}</p><button className="button primary full" onClick={() => next ? p.onReview(next) : p.onRecords()}>{next ? 'Review next bill' : 'Open records'}<ArrowRight size={16}/></button>{next && <span className="next-file"><FileText size={14}/>{next.name}</span>}</section>
-        <section className="request-shortcuts"><div className="flex-between"><h2>Customer requests</h2><ShieldCheck size={17}/></div>{p.requests.slice(0, 2).map(r => <button key={r.id} onClick={() => p.onRequest(r)}><div><strong>{r.customer}</strong><small>{r.period} · {r.status?.replaceAll('_', ' ') || 'Draft'}</small></div><ArrowRight size={16}/></button>)}<p>Answers stay private until the owner approves sharing.</p></section>
+        <section className="request-shortcuts"><div className="flex-between"><h2>Customer requests</h2><button className="text-button" onClick={p.onAllRequests}>View all<ArrowRight size={14}/></button></div>{!p.requests.length&&<p>No customer requests yet.</p>}{recentRequests(p.requests).map(r => <button key={r.id} onClick={() => p.onRequest(r)}><div><strong>{r.customer}</strong><small>{r.period} · {r.status?.replaceAll('_', ' ') || 'Draft'}</small></div><ArrowRight size={16}/></button>)}<p>Answers stay private until the owner approves sharing.</p></section>
       </div>
     </div>
     <div className="snapshot-footer"><p>{p.periodLabel} only · Partial-year coverage</p><button className="button primary" onClick={p.onUpload}><Plus size={16}/>Add records</button></div>
