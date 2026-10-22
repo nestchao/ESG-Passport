@@ -54,3 +54,13 @@ Tests use injected SQLite and in-memory storage, without network credentials. Th
 ```
 
 Use a writable workspace path for pytest's temporary directory. After configuring a real Supabase project, run the explicit setup and `check --anon-key` sequence above to verify persistence and access isolation against the live services.
+
+## Monthly reporting and reversible archive migration
+
+From src/backend, explicitly apply `python -m alembic upgrade head` before starting the updated API. Revision 0003_monthly_archive adds nullable archive metadata and audit-event reporting months, preserving existing document versions and source paths. No reset or reseed is needed. Legacy events with no resolvable record/request target remain workspace-level.
+
+GET /profile, /documents, /declarations, /questionnaires and /shares accept `period=YYYY-MM` (default 2026-09). GET /documents additionally accepts `archived=true` for archived rows only; the default is active rows. Activity history stays company-wide. Reporting selection never changes Company.period globally.
+
+Uploads accept a multipart period. PUT /documents/{id} accepts name, period, activities and expected_version atomically and leaves the record unconfirmed. POST /documents/{id}/archive and /restore require expected_version. Owner and clerk may use these endpoints; customers cannot. The existing PUT activities endpoint also accepts expected_version, and the frontend always sends it. Stale versions return 409. For legacy client compatibility this field remains optional on that existing endpoint only.
+
+Duplicate-file 409 responses include the existing document ID, assigned period and archive state. Archived files remain available internally and through previously approved token routes, but cannot be added to a new declaration/approval. Edits invalidate affected monthly drafts and periods with declarations referencing the changed evidence. Approved snapshots are never rewritten.

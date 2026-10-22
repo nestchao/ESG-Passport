@@ -28,6 +28,7 @@ export function createApiClient({baseUrl=DEFAULT_API_URL,fetchImpl=(...args)=>fe
     if(!response.ok){
       let payload;try{payload=await response.json();}catch{}
       const error=Error(errorMessage(payload,response.status));error.status=response.status;
+      if(response.status===409&&payload?.detail?.document_id)error.existingDocument={id:payload.detail.document_id,period:payload.detail.period,archived:!!payload.detail.archived};
       if(Array.isArray(payload?.detail))error.fieldErrors=Object.fromEntries(payload.detail.map(item=>[
         Array.isArray(item.loc)?item.loc.filter(part=>!['body','query','path'].includes(part)).join('.'):item.field,
         item.msg||item.message||'Invalid value.',

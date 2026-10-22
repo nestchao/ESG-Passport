@@ -46,3 +46,10 @@ test('creation failure never calls saved callback; matching failure preserves sa
  await assert.rejects(h.createAndMatchRequest(async()=>{throw failure;},{},()=>saved++),e=>e===failure);assert.equal(saved,0);
  let n=0;await assert.rejects(h.createAndMatchRequest(async()=>{if(n++)throw failure;return {id:'q'};},{},()=>saved++),/Request saved\. Matching could not finish: offline\. Retry matching or select disclosures manually\./);assert.equal(saved,1);
 });
+
+test('archived and unavailable evidence cannot be selected; active other-month evidence remains valid',()=>{
+ const docs=[{id:'cross',period:'2026-01'},{id:'archived',archived:true},{id:'gone',unavailable:true}];
+ assert.deepEqual(h.retainEvidenceSelection(['cross','archived','gone'],docs),['cross']);
+ const result=h.evidenceSelection({questions:[{reviewed:true,evidence_ids:['cross']}]},[],docs);
+ assert.equal(result.recommendedIds[0],'cross');assert.deepEqual(result.excludedIds,['cross']);
+});

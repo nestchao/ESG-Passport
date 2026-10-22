@@ -44,3 +44,11 @@ npm start
 Stop the development frontend with Ctrl+C first if it owns port 3000. Open http://127.0.0.1:3000 and time the first visit separately from three subsequent visits. Development mode compiles pages on demand; production mode serves the completed build. This does not eliminate Supabase network latency.
 
 Overview loads profile, records and questionnaires together. Declarations and approved-pack history load independently with their own loading/error states. Explicit refresh keeps existing content visible while updating. A source editor can open before its file finishes downloading; confirmation stays disabled until the protected source file loads. No save is considered successful before the backend confirms it.
+
+## Monthly records and archives
+
+Use Reporting month in the header to select any calendar month. The period stays in `?period=YYYY-MM`; switching is guarded when there are unsaved edits. September 2026 remains the initial default. New months start missing, with blank declarations and Unknown policy statuses.
+
+Records has Active and Archived views. Edit record changes its display name, assigned month and quantities without replacing its original source. Save changes leaves it unconfirmed. Confirm & calculate is explicit. Archive removes it from active calculations; Restore returns it unconfirmed. Existing approved packs retain their approved answers and selected original files.
+
+Policies in Place uses four accessible status cards, a known-status count, saved attribution in MYT, and a single attachment section. Prior-month answers are reference only. Existing attached files remain visible even after moving or archiving, so owners can remove an archived attachment before saving.
