@@ -7,12 +7,12 @@ Next.js workspace connected to the Python API and Supabase database/storage. The
 Start and configure the backend first using its README. From this frontend folder:
 
 ```powershell
-Copy-Item .env.example .env.local
+if (!(Test-Path ../../.env)) { Copy-Item ../../.env.example ../../.env }
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000`. Change it in `.env.local` if necessary and restart the frontend; Next.js embeds public variables at build time. The backend CORS origins must include the frontend origin. Never put Supabase service keys in frontend environment variables.
+Open http://127.0.0.1:3000. `NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000`. Change it in the repository-root `.env` if necessary and restart the frontend; Next.js embeds public variables at build time. The backend CORS origins must include the frontend origin. Use Node.js 22 or newer. The Node-only configuration reads the shared root file but exports only `NEXT_PUBLIC_API_URL` to the browser; it never exports Supabase/database secrets or other values from that file. Do not create a frontend `.env.local`. Shell variables take precedence.
 
 For a production preview run `npm run build`, then `npm start`.
 

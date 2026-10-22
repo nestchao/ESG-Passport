@@ -12,16 +12,16 @@ From the repository root, in PowerShell:
 cd src\backend
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
+if (!(Test-Path ../../.env)) { Copy-Item ../../.env.example ../../.env }
 ```
 
-Edit `src/backend/.env` with your Supabase project URL, server secret/service-role key and Postgres session-pooler connection string. Do not paste keys into chat or frontend files. Explicit process environment variables take precedence over this file. Keep one backend configuration; a repository-root `.env` also works if no nearer backend file exists.
+Edit the repository-root `.env` with your Supabase project URL, server secret/service-role key and Postgres session-pooler connection string. Both the backend and Alembic read this exact file regardless of your working directory. Explicit process environment variables take precedence. There are no separate backend or frontend `.env` files. Do not paste secrets into chat or source code.
 
 For `DATABASE_URL`, use the Supabase dashboard's connection string. The session pooler is useful where direct IPv6 is unavailable (typically port 5432, user `postgres.<project-ref>`); use its exact host and username. A direct database connection also works where supported. Percent-encode special characters in the password. The backend normalizes Postgres URLs to Psycopg 3 and requires TLS by default. SQLite is only available through explicit test dependency injection; configuration rejects it for the running server.
 
 Use a database role that can apply migrations, enable RLS and revoke browser grants. The server's database role must be able to read and write the protected application tables; use a trusted server role with appropriate RLS bypass or server policies. Supabase `anon` and `authenticated` roles must retain no application table access or permissive application policies. The server storage key must manage the private evidence bucket. No secret is needed in browser code.
 
-From `src/backend` with the virtual environment active:
+From `src/backend` after creating the virtual environment:
 
 ```powershell
 .\.venv\Scripts\python.exe -m alembic upgrade head

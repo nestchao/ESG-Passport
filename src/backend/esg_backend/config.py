@@ -1,9 +1,21 @@
 """Environment configuration. Secrets remain on the Python server."""
 from dataclasses import dataclass
 import os
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
+
+
+ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
+
+def load_environment() -> None:
+    """Use one repository-root file, independent of the working directory.
+
+    Explicit process environment variables always take precedence.
+    """
+    load_dotenv(dotenv_path=ROOT_ENV_FILE, override=False)
 
 
 @dataclass(frozen=True)
@@ -18,7 +30,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> 'Settings':
-        load_dotenv()
+        load_environment()
         return cls(
             database_url=os.getenv('DATABASE_URL', '').strip(),
             supabase_url=os.getenv('SUPABASE_URL', '').strip().rstrip('/'),

@@ -3,7 +3,7 @@ from logging.config import fileConfig
 import os
 
 from alembic import context
-from dotenv import load_dotenv
+from esg_backend.config import load_environment
 from sqlalchemy.engine import make_url
 
 from esg_backend.db import build_engine
@@ -12,7 +12,7 @@ from esg_backend.models import Base
 config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name)
-load_dotenv()
+load_environment()
 target_metadata = Base.metadata
 
 

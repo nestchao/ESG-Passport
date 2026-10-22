@@ -1,3 +1,4 @@
 import type { NextConfig } from 'next';
-const config: NextConfig = { poweredByHeader: false };
+import { getPublicEnvironment } from './env-config.mjs';
+const config: NextConfig = { poweredByHeader: false, env: getPublicEnvironment() };
 export default config;
