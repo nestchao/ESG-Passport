@@ -31,3 +31,16 @@ For a production preview run `npm run build`, then `npm start`.
 - Pack links use the frontend origin and open in another browser against the same backend. With the default localhost addresses, they work only on the same computer while both servers are running. External access requires reachable frontend/API addresses and appropriate backend CORS configuration.
 - Workspace help → Restore sample records calls the server's demo reset. It works only when the backend enables reset and affects the server demo workspace.
 - The previous browser-only demo data is left untouched and unused. This application is not a certification or legal assurance system.
+
+## Compare production loading with development
+
+Keep the configured FastAPI backend running. In a separate frontend terminal:
+
+```powershell
+npm run build
+npm start
+```
+
+Stop the development frontend with Ctrl+C first if it owns port 3000. Open http://127.0.0.1:3000 and time the first visit separately from three subsequent visits. Development mode compiles pages on demand; production mode serves the completed build. This does not eliminate Supabase network latency.
+
+Overview loads profile, records and questionnaires together. Declarations and approved-pack history load independently with their own loading/error states. Explicit refresh keeps existing content visible while updating. A source editor can open before its file finishes downloading; confirmation stays disabled until the protected source file loads. No save is considered successful before the backend confirms it.

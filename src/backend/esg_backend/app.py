@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .config import Settings
 from .db import build_engine, make_session_factory
-from .models import ActivityEvent, ApprovedSnapshot, Questionnaire
+from .models import ActivityEvent, ApprovedSnapshot
 from .schemas import ActivitiesInput, ApprovalInput, DeclarationInput, HandoffInput, QuestionnaireInput, RecalculateInput, ReviewInput
 from .service import MAX_FILE, Workspace, row
 from .storage import StorageError, SupabaseStorage
@@ -136,8 +136,7 @@ def create_app(*, settings=None, session_factory=None, storage=None):
 
     @api.get('/questionnaires')
     def requests(work=Depends(workspace)):
-        return [work.serialize_request(request) for request in work.db.scalars(select(Questionnaire).where(
-            Questionnaire.company_id == settings.company_id).order_by(Questionnaire.created_at))]
+        return work.requests()
 
     @api.post('/questionnaires', status_code=201)
     def create_request(body: QuestionnaireInput, work=Depends(workspace)):
