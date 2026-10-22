@@ -198,3 +198,39 @@ def test_archive_migration_preserves_legacy_records_and_backfills_audit():
         periods = dict(connection.execute(text('SELECT id,period FROM activity_events')).all())
         assert periods == {'doc-event':'2026-09','workspace-event':None}
     engine.dispose()
+
+
+@pytest.mark.parametrize('kind,category,unit', [('water','water','m3'),('waste','waste_generated','kg')])
+def test_correct_document_type_requires_reconfirmation(workspace, kind, category, unit):
+    client = workspace[0]
+    request = reviewed(client)
+    pack = approve(client, request)
+    before = get(client, '/shares/' + pack['token'], headers={})['snapshot']
+    doc = get(client, '/documents/doc-electricity')
+    activity = deepcopy(doc['activities'])
+    activity[0].update(category=category, unit=unit, quantity='2')
+    body = dict(name=doc['name'], period=doc['period'], type=kind,
+                activities=activity, expected_version=doc['version'])
+    response = client.put('/documents/' + doc['id'], headers=CLERK, json=body)
+    assert response.status_code == 200, response.text
+    saved = response.json()
+    assert saved['type'] == kind and not saved['confirmed']
+    assert saved['activities'][0]['category'] == category
+    assert client.put('/documents/' + doc['id'], headers=OWNER, json=body).status_code == 409
+    assert get(client, '/shares/' + pack['token'], headers={})['snapshot'] == before
+    changed = get(client, '/questionnaires/' + request['id'])
+    assert not changed['questions'][0]['reviewed']
+    response = client.put('/documents/' + doc['id'] + '/activities', headers=CLERK,
+        json={'confirmed':True,'activities':activity,'expected_version':saved['version']})
+    assert response.status_code == 200, response.text
+    assert response.json()['confirmed']
+
+
+def test_reclassification_rejects_incompatible_activities_and_keeps_type(workspace):
+    client = workspace[0]
+    doc = get(client, '/documents/doc-electricity')
+    body = dict(name=doc['name'],period=doc['period'],type='water',activities=doc['activities'],expected_version=doc['version'])
+    assert client.put('/documents/' + doc['id'],headers=OWNER,json=body).status_code == 422
+    after = get(client, '/documents/' + doc['id'])
+    assert after['type'] == doc['type'] and after['version'] == doc['version']
+    assert client.put('/documents/' + doc['id'],json=body).status_code in (401,403)

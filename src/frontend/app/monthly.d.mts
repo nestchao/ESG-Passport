@@ -9,7 +9,7 @@ export function selectedPeriod(search: string | URLSearchParams): string;
 /** Returns a leading-question-mark query string without mutating history or input. */
 export function periodSearch(search: string | URLSearchParams, period: string): string;
 export function periodPath(path: string, period: string, extra?: Record<string,string | number | boolean | null | undefined>): string;
-export type RecordDraft = {name?: string; period?: string; activities?: Record<string,any>[]};
+export type RecordDraft = {name?: string; period?: string; type?: string; activities?: Record<string,any>[]};
 export function recordDraftKey(draft: RecordDraft): string;
 export function validateRecordMetadata(draft: {name?: string; period?: string}): Record<string,string>;
 /** Returns the original array for stale/equal versions; otherwise a new array. */

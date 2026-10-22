@@ -39,3 +39,11 @@ export function validateActivities(rows,documentType,period) {
  });return errors;
 }
 
+
+// A type correction must never reinterpret a previous numeric quantity in a new unit.
+export function reclassifyActivities(rows,type) {
+ const category=allowedCategories(type)[0];
+ if(!category)throw new RangeError('Unsupported document category.');
+ const first=rows[0]||{};
+ return [{category,quantity:'',unit:allowedUnits(category)[0],period_start:first.period_start||'',period_end:first.period_end||'',estimated:false,assumptions:'',allocated_period:null}];
+}
