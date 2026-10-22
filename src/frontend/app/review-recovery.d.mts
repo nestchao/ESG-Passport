@@ -1,0 +1,10 @@
+type RecordValue = Record<string, any>;
+type Api = (path: string, options?: {method?: string; body?: string}) => Promise<any>;
+export function needsReconfirmation(request: RecordValue | null | undefined): boolean;
+export function recommendedEvidence(request: RecordValue | null | undefined): string[];
+export function retainEvidenceSelection(selectedIds: string[], documents: RecordValue[]): string[];
+export function evidenceSelection(request: RecordValue | null | undefined, selectedIds: string[], documents: RecordValue[]): {recommendedIds: string[]; selectedRecommendedCount: number; excludedIds: string[]; noAttachments: boolean};
+export function packQuestionEvidence(question: RecordValue, snapshot: RecordValue): RecordValue[];
+export function latestApprovedPack(shares: RecordValue[], requestId: string): RecordValue | undefined;
+export function reloadRequestContext(api: Api, requestId: string, role: string): Promise<{request: RecordValue; documents: RecordValue[]; shares: RecordValue[]}>;
+export function createAndMatchRequest(api: Api, body: RecordValue, onCreated: (request: RecordValue) => void | Promise<void>): Promise<RecordValue>;

@@ -42,3 +42,12 @@ main{padding:32px 32px 24px;max-width:1320px}.page-heading{margin-bottom:24px;al
 .policy-summary-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border, #dce7e2); }
 .policy-summary-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .policy-summary-row .status-tag { flex-shrink: 0; }
+
+/* Draft safety and review recovery keep the existing forest-green visual language. */
+.draft-confirm-backdrop{position:fixed;inset:0;z-index:300;background:rgba(12,35,28,.48);display:grid;place-items:center;padding:24px}
+.draft-confirm{width:min(100%,480px);padding:28px;box-shadow:0 18px 60px #102e2930}.draft-confirm h2{font-size:21px;margin:0 0 12px}.draft-confirm p{color:var(--muted);margin:0 0 24px}.draft-confirm-actions{display:flex;gap:12px;flex-wrap:wrap}
+.request-notices:empty{display:none}.request-notices{display:grid;gap:12px;margin:18px 0}.recovery-notice{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #ead8ad;background:#fff8e9;border-radius:8px;padding:16px 18px}.recovery-notice p{margin:0;font-size:13px}.recovery-notice .button{flex-shrink:0}.recovery-notice.previous-pack{background:#edf4ef;border-color:#d6e5d9}
+.evidence-selection{margin:18px 0}.evidence-selection h4{margin:0;font-size:14px}.evidence-selection>p{color:var(--muted);font-size:13px}.evidence-selection .info-note{margin:12px 0}.supporting-label{font-size:11px;color:#21634d;background:#eaf4ee;padding:3px 7px;border-radius:4px;margin-left:auto}.evidence-checkboxes label{min-height:44px;gap:10px}
+.field-error{display:block;font-size:12px;line-height:1.5;margin-top:5px;color:#a32626}.activity-editor [aria-invalid=true]{border-color:#b83232;box-shadow:0 0 0 1px #b83232}.metric-availability{padding:12px;margin-top:12px;border-radius:6px;background:#fff8e9;color:#705020;font-size:12px}.metric-availability p{font-size:12px;margin:5px 0 0}.metric-availability strong{font-size:12px}
+@media(max-width:650px){.recovery-notice{align-items:flex-start;flex-direction:column}.evidence-selection .flex-between{align-items:flex-start;gap:12px;flex-wrap:wrap}.draft-confirm{padding:22px}.draft-confirm-actions .button{flex:1}}
+@media print{.draft-confirm-backdrop,.request-notices{display:none!important}}

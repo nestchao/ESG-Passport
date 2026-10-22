@@ -27,7 +27,12 @@ export function createApiClient({baseUrl=DEFAULT_API_URL,fetchImpl=(...args)=>fe
     catch{throw Error(connectionMessage);}
     if(!response.ok){
       let payload;try{payload=await response.json();}catch{}
-      const error=Error(errorMessage(payload,response.status));error.status=response.status;throw error;
+      const error=Error(errorMessage(payload,response.status));error.status=response.status;
+      if(Array.isArray(payload?.detail))error.fieldErrors=Object.fromEntries(payload.detail.map(item=>[
+        Array.isArray(item.loc)?item.loc.filter(part=>!['body','query','path'].includes(part)).join('.'):item.field,
+        item.msg||item.message||'Invalid value.',
+      ]).filter(([field])=>field));
+      throw error;
     }
     return response;
   }
