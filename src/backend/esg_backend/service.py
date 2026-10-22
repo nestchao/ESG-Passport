@@ -98,12 +98,13 @@ class Workspace:
             raise HTTPException(403, 'Only the Owner can perform this action.')
 
     def period(self, period):
-        if period != self.company().period:
-            invalid('period', 'This hackathon workspace supports September 2026 only.')
+        if not re.fullmatch(r'(?!0000)[0-9]{4}-(0[1-9]|1[0-2])', period):
+            invalid('period', 'Choose a valid reporting month (YYYY-MM).')
+        return period
 
-    def log(self, action, target, summary):
+    def log(self, action, target, summary, period=None):
         self.db.add(ActivityEvent(company_id=self.settings.company_id, actor=self.actor, role=self.role,
-                                  action=action, target=target, summary=summary))
+                                  action=action, target=target, summary=summary, period=period))
 
     def document(self, document_id):
         doc = self.db.scalar(select(Document).where(Document.id == document_id,
@@ -128,6 +129,7 @@ class Workspace:
         results = []
         for doc in documents:
             output = row(doc, *([] if include_path else ['object_path', 'file_hash']))
+            output['archived'] = doc.archived_at is not None
             history = grouped[doc.id]
             output['activities'] = [activity for activity in history if activity['revision'] == doc.activity_revision]
             if include_history:
@@ -138,55 +140,114 @@ class Workspace:
     def serialize_document(self, doc, include_path=False):
         return self.serialize_documents([doc], include_path=include_path)[0]
 
-    def documents(self, *, include_history=True):
+    def documents(self, period='2026-09', *, archived=False, include_history=True):
+        self.period(period)
         documents = self.db.scalars(select(Document).where(
-            Document.company_id == self.settings.company_id).order_by(Document.uploaded_at, Document.id))
+            Document.company_id == self.settings.company_id, Document.period == period,
+            Document.archived_at.is_not(None) if archived else Document.archived_at.is_(None)).order_by(Document.uploaded_at, Document.id))
         return self.serialize_documents(documents, include_history=include_history)
 
-    def declarations(self):
+    def declarations(self, period='2026-09'):
+        self.period(period)
         records = self.db.scalars(select(Declaration).where(Declaration.company_id == self.settings.company_id,
-            Declaration.period == self.company().period).order_by(Declaration.code, Declaration.version.desc()))
+            Declaration.period == period).order_by(Declaration.code, Declaration.version.desc()))
         latest = {}
         for declaration in records:
             latest.setdefault(declaration.code, row(declaration))
+        evidence_ids = {identifier for declaration in latest.values() for identifier in declaration['evidence_ids']}
+        available = set(self.db.scalars(select(Document.id).where(Document.company_id == self.settings.company_id,
+            Document.archived_at.is_(None), Document.id.in_(evidence_ids)))) if evidence_ids else set()
+        for declaration in latest.values():
+            if any(identifier not in available for identifier in declaration['evidence_ids']):
+                declaration['complete'] = False
         return list(latest.values())
 
-    def profile(self):
+    def profile(self, period='2026-09'):
+        self.period(period)
         company = self.company()
         factors = [row(f) for f in self.db.scalars(select(FactorVersion).order_by(FactorVersion.year, FactorVersion.id))]
-        result = calculate_profile(row(company), self.documents(include_history=False), self.declarations(), factors, company.period)
+        result = calculate_profile(row(company), self.documents(period, include_history=False), self.declarations(period), factors, period)
         result['version'] = company.version
         return safe(result)
 
-    def invalidate(self):
+    def invalidate(self, periods, document_id=None):
         company = self.company()
         company.version += 1
-        for request in self.db.scalars(select(Questionnaire).where(Questionnaire.company_id == company.id)):
+        periods = set(periods)
+        if document_id:
+            for declaration in self.db.scalars(select(Declaration).where(Declaration.company_id == company.id)):
+                if document_id in declaration.evidence_ids:
+                    periods.add(declaration.period)
+        requests = list(self.db.scalars(select(Questionnaire).where(
+            Questionnaire.company_id == company.id, Questionnaire.period.in_(periods))))
+        ids = [request.id for request in requests]
+        for request in requests:
             request.version += 1
             request.status = 'draft'
-            for question in self.db.scalars(select(Question).where(Question.questionnaire_id == request.id)):
+        if ids:
+            for question in self.db.scalars(select(Question).where(Question.questionnaire_id.in_(ids))):
                 question.reviewed = False
                 question.version += 1
 
-    def upload(self, filename, category, content, mime_type):
+    def ensure_editable(self, doc, expected_version=None):
+        if doc.archived_at:
+            raise HTTPException(409, 'Restore this archived document before editing it.')
+        self.check_version(doc, expected_version)
+
+    @staticmethod
+    def check_version(doc, expected_version):
+        if expected_version is not None and doc.version != expected_version:
+            raise HTTPException(409, 'This document changed. Refresh before saving.')
+
+    def update_document(self, document_id, body):
+        self.company(lock=True)
+        doc = self.document(document_id)
+        self.ensure_editable(doc, body.expected_version)
+        self.period(body.period)
+        old_period = doc.period
+        doc.name, doc.period = body.name, body.period
+        return self.save_activities(document_id, body, confirmed=False, old_period=old_period)
+
+    def archive_document(self, document_id, body, *, restore=False):
+        self.company(lock=True)
+        doc = self.document(document_id)
+        self.check_version(doc, body.expected_version)
+        if bool(doc.archived_at) == (not restore):
+            raise HTTPException(409, 'Document is already in the requested state.')
+        doc.archived_at = None if restore else utcnow()
+        doc.archived_by = None if restore else self.actor
+        doc.confirmed = False
+        doc.version += 1
+        self.invalidate([doc.period], doc.id)
+        self.log('document_restored' if restore else 'document_archived', doc.id,
+                 'Restored for review.' if restore else 'Archived from active reporting.', doc.period)
+        self.db.flush()
+        result = self.serialize_document(doc)
+        self.db.commit()
+        return result
+
+    def upload(self, filename, category, content, mime_type, period='2026-09'):
+        self.period(period)
         company = self.company(lock=True)
         if category not in ('electricity', 'diesel', 'petrol', 'water', 'waste'):
             invalid('type', 'Select electricity, diesel, petrol, water or waste.')
         mime, extension = validate_file(content, mime_type)
         digest = hashlib.sha256(content).hexdigest()
-        if self.db.scalar(select(Document).where(Document.company_id == company.id, Document.file_hash == digest)):
-            raise HTTPException(409, 'This file has already been uploaded. Open its existing record.')
+        existing = self.db.scalar(select(Document).where(Document.company_id == company.id, Document.file_hash == digest))
+        if existing:
+            raise HTTPException(409, {'message': 'This file has already been uploaded. Open its existing record.',
+                'document_id': existing.id, 'period': existing.period, 'archived': existing.archived_at is not None})
         document_id = str(uuid4())
         name = PurePosixPath((filename or 'record').replace('\\', '/')).name[:240]
         path = f'{company.id}/uploads/{document_id}/{digest}.{extension}'
-        doc = Document(id=document_id, company_id=company.id, name=name, type=category, period=company.period,
+        doc = Document(id=document_id, company_id=company.id, name=name, type=category, period=period,
                        mime_type=mime, file_hash=digest, object_path=path, uploaded_by=self.actor)
         try:
             self.storage.upload(path, content, mime)
             self.db.add(doc)
             self.db.flush()
-            self.invalidate()
-            self.log('document_uploaded', doc.id, f'Added {name}; quantities await review.')
+            self.invalidate([period])
+            self.log('document_uploaded', doc.id, f'Added {name}; quantities await review.', period)
             result = self.serialize_document(doc)
             self.db.commit()
             return result
@@ -199,9 +260,11 @@ class Workspace:
                 logging.getLogger(__name__).error('Could not clean up an uploaded object after a database failure.')
             raise
 
-    def save_activities(self, document_id, body):
+    def save_activities(self, document_id, body, *, confirmed=None, old_period=None):
         self.company(lock=True)
         doc = self.document(document_id)
+        self.ensure_editable(doc, body.expected_version)
+        confirmed = body.confirmed if confirmed is None else confirmed
         seen = set()
         for index, item in enumerate(body.activities):
             field = f'activities.{index}'
@@ -215,7 +278,7 @@ class Workspace:
                 invalid(field + '.unit', 'Choose a supported unit for this category.')
             if item.period_start > item.period_end:
                 invalid(field + '.period_end', 'End date must follow the start date.')
-            start, end = item.period_start.strftime('%Y-%m'), item.period_end.strftime('%Y-%m')
+            start, end = f'{item.period_start.year:04d}-{item.period_start.month:02d}', f'{item.period_end.year:04d}-{item.period_end.month:02d}'
             if start != end:
                 if not item.estimated or not item.assumptions or item.allocated_period != doc.period:
                     invalid(field, 'Cross-month records require an estimated allocation to the reporting month and its method.')
@@ -227,14 +290,14 @@ class Workspace:
                 invalid(field + '.assumptions', 'Describe the estimation method.')
         doc.activity_revision += 1
         doc.version += 1
-        doc.confirmed = body.confirmed
+        doc.confirmed = confirmed
         for item in body.activities:
             values = item.model_dump(exclude={'id', 'revision', 'confirmed_by', 'confirmed_at'})
             self.db.add(Activity(company_id=doc.company_id, document_id=doc.id, revision=doc.activity_revision,
-                **values, confirmed_by=self.actor if body.confirmed else '', confirmed_at=utcnow() if body.confirmed else None))
-        self.invalidate()
-        self.log('activity_confirmed' if body.confirmed else 'activity_draft_saved', doc.id,
-                 f'Revision {doc.activity_revision}: {len(body.activities)} quantities; confirmed={body.confirmed}.')
+                **values, confirmed_by=self.actor if confirmed else '', confirmed_at=utcnow() if confirmed else None))
+        self.invalidate([doc.period, old_period or doc.period], doc.id)
+        self.log('activity_confirmed' if confirmed else 'activity_draft_saved', doc.id,
+                 f'Revision {doc.activity_revision}: {len(body.activities)} quantities; confirmed={confirmed}.', doc.period)
         self.db.flush()
         result = self.serialize_document(doc)
         self.db.commit()
@@ -252,15 +315,16 @@ class Workspace:
             invalid('answer', str(error))
         evidence = list(dict.fromkeys(body.evidence_ids))
         for identifier in evidence:
-            self.document(identifier)
+            if self.document(identifier).archived_at:
+                raise HTTPException(409, 'Archived documents cannot be used as new declaration evidence.')
         previous = self.db.scalar(select(Declaration).where(Declaration.company_id == self.settings.company_id,
             Declaration.code == code, Declaration.period == body.period).order_by(Declaration.version.desc()))
         declaration = Declaration(company_id=self.settings.company_id, code=code, period=body.period,
             version=(previous.version if previous else 0) + 1, answer=body.answer, evidence_ids=evidence,
             complete=complete, declared_by=self.actor)
         self.db.add(declaration)
-        self.invalidate()
-        self.log('declaration_saved', code, f'Owner declaration version {declaration.version}; complete={complete}.')
+        self.invalidate([body.period])
+        self.log('declaration_saved', code, f'Owner declaration version {declaration.version}; complete={complete}.', body.period)
         self.db.flush()
         result = row(declaration)
         self.db.commit()
@@ -275,18 +339,19 @@ class Workspace:
 
     def serialize_request(self, request, *, profile=None, questions=None):
         if profile is None:
-            profile = self.profile()
+            profile = self.profile(request.period)
         if questions is None:
             questions = self.db.scalars(select(Question).where(
                 Question.questionnaire_id == request.id).order_by(Question.position))
         return {**row(request), 'questions': [safe(answer_question(row(q), profile)) for q in questions]}
 
-    def requests(self):
+    def requests(self, period='2026-09'):
+        self.period(period)
         requests = list(self.db.scalars(select(Questionnaire).where(
-            Questionnaire.company_id == self.settings.company_id).order_by(Questionnaire.created_at)))
+            Questionnaire.company_id == self.settings.company_id, Questionnaire.period == period).order_by(Questionnaire.created_at)))
         if not requests:
             return []
-        profile = self.profile()
+        profile = self.profile(period)
         grouped = {request.id: [] for request in requests}
         for question in self.db.scalars(select(Question).where(
                 Question.questionnaire_id.in_(grouped)).order_by(Question.position)):
@@ -304,7 +369,7 @@ class Workspace:
         for position, text in enumerate(body.questions):
             self.db.add(Question(questionnaire_id=request.id, text=text, position=position,
                                  rationale='Awaiting matching and human review.', confidence='Low'))
-        self.log('questionnaire_created', request.id, f'{body.customer}: {len(body.questions)} questions.')
+        self.log('questionnaire_created', request.id, f'{body.customer}: {len(body.questions)} questions.', request.period)
         self.db.flush()
         result = self.serialize_request(request)
         self.db.commit()
@@ -326,7 +391,7 @@ class Workspace:
             question.version += 1
         request.status = 'draft'
         request.version += 1
-        self.log('mapping_proposed', request.id, 'Wording-based suggestions prepared; all mappings require confirmation.')
+        self.log('mapping_proposed', request.id, 'Wording-based suggestions prepared; all mappings require confirmation.', request.period)
         self.db.flush()
         result = self.serialize_request(request)
         self.db.commit()
@@ -345,16 +410,16 @@ class Workspace:
         question.reviewed = body.reviewed
         question.manual_answer = body.manual_answer or None
         question.manual_declaration = ({'declared_by': self.actor, 'declared_at': safe(utcnow()),
-            'period': self.company().period} if body.manual_answer else None)
+            'period': self.questionnaire(question.questionnaire_id).period} if body.manual_answer else None)
         question.reviewed_by = self.actor if body.reviewed else ''
         question.reviewed_at = utcnow() if body.reviewed else None
         question.version += 1
         request = self.questionnaire(question.questionnaire_id)
         request.version += 1
         request.status = 'draft'
-        self.log('mapping_reviewed', identifier, f'Version {question.version}: {old_codes} → {question.codes}; reviewed={body.reviewed}.')
+        self.log('mapping_reviewed', identifier, f'Version {question.version}: {old_codes} → {question.codes}; reviewed={body.reviewed}.', request.period)
         self.db.flush()
-        result = safe(answer_question(row(question), self.profile()))
+        result = safe(answer_question(row(question), self.profile(request.period)))
         self.db.commit()
         return result
 
@@ -366,7 +431,7 @@ class Workspace:
             raise HTTPException(409, 'Review every question before sending it to the owner.')
         request.status = 'ready_for_owner'
         request.version += 1
-        self.log('ready_for_owner', identifier, 'Prepared answers sent to owner; nothing was shared externally.')
+        self.log('ready_for_owner', identifier, 'Prepared answers sent to owner; nothing was shared externally.', request.period)
         self.db.flush()
         result = self.serialize_request(request)
         self.db.commit()
@@ -382,7 +447,10 @@ class Workspace:
         if not prepared['questions'] or any(not q['reviewed'] for q in prepared['questions']):
             raise HTTPException(409, 'Review every question before approving.')
         selected = list(dict.fromkeys(body.selected_evidence_ids))
-        evidence = [self.serialize_document(self.document(identifier), include_path=True) for identifier in selected]
+        selected_docs = [self.document(identifier) for identifier in selected]
+        if any(doc.archived_at for doc in selected_docs):
+            raise HTTPException(409, 'Archived documents cannot be selected for a new approval.')
+        evidence = self.serialize_documents(selected_docs, include_path=True)
         included = set(selected)
         for question in prepared['questions']:
             question['evidence_ids'] = [identifier for identifier in question.get('evidence_ids', []) if identifier in included]
@@ -403,7 +471,7 @@ class Workspace:
         self.db.add(pack)
         request.status = 'shared'
         request.version += 1
-        self.log('pack_approved', identifier, f'Immutable snapshot approved for {body.recipient}; {len(selected)} attachments.')
+        self.log('pack_approved', identifier, f'Immutable snapshot approved for {body.recipient}; {len(selected)} attachments.', request.period)
         self.db.flush()
         result = self.serialize_pack(pack)
         self.db.commit()
@@ -429,7 +497,7 @@ class Workspace:
     def get_pack(self, token):
         pack = self.pack(token)
         result = self.serialize_pack(pack)
-        self.log('customer_pack_viewed', pack.id, 'Approved pack opened using its share token.')
+        self.log('customer_pack_viewed', pack.id, 'Approved pack opened using its share token.', pack.snapshot.get('period'))
         self.db.commit()
         return result
 

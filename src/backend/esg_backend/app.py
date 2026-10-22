@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .config import Settings
 from .db import build_engine, make_session_factory
 from .models import ActivityEvent, ApprovedSnapshot
-from .schemas import ActivitiesInput, ApprovalInput, DeclarationInput, HandoffInput, QuestionnaireInput, RecalculateInput, ReviewInput
+from .schemas import ActivitiesInput, ApprovalInput, DeclarationInput, HandoffInput, QuestionnaireInput, RecalculateInput, ReviewInput, Period, DocumentUpdateInput, DocumentVersionInput
 from .service import MAX_FILE, Workspace, row
 from .storage import StorageError, SupabaseStorage
 
@@ -86,27 +86,27 @@ def create_app(*, settings=None, session_factory=None, storage=None):
             return JSONResponse(status_code=503, content={'status': 'unavailable', 'detail': 'Cannot connect to Supabase Postgres.'})
 
     @api.get('/profile')
-    def profile(work=Depends(workspace)):
-        return work.profile()
+    def profile(period: Period = '2026-09', work=Depends(workspace)):
+        return work.profile(period)
 
     @api.post('/profile/recalculate')
     def recalculate(body: RecalculateInput, work=Depends(workspace)):
         work.company(lock=True)
         work.period(body.period)
-        result = work.profile()
-        work.log('profile_calculated', body.period, 'Calculated from confirmed records and versioned factors.')
+        result = work.profile(body.period)
+        work.log('profile_calculated', body.period, 'Calculated from confirmed records and versioned factors.', body.period)
         work.db.commit()
         return result
 
     @api.get('/documents')
-    def documents(work=Depends(workspace)):
+    def documents(period: Period = '2026-09', archived: bool = False, work=Depends(workspace)):
         work.company()
-        return work.documents()
+        return work.documents(period, archived=archived)
 
     @api.post('/documents', status_code=201)
-    def upload(file: UploadFile = File(), type: str = Form(), work=Depends(workspace)):
+    def upload(file: UploadFile = File(), type: str = Form(), period: Period = Form('2026-09'), work=Depends(workspace)):
         content = file.file.read(MAX_FILE + 1)
-        return work.upload(file.filename, type, content, file.content_type)
+        return work.upload(file.filename, type, content, file.content_type, period)
 
     @api.get('/documents/{document_id}')
     def document(document_id: str, work=Depends(workspace)):
@@ -122,21 +122,33 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     def document_file(document_id: str, work=Depends(workspace)):
         return file_response(work.file(document_id))
 
+    @api.put('/documents/{document_id}')
+    def update_document(document_id: str, body: DocumentUpdateInput, work=Depends(workspace)):
+        return work.update_document(document_id, body)
+
+    @api.post('/documents/{document_id}/archive')
+    def archive_document(document_id: str, body: DocumentVersionInput, work=Depends(workspace)):
+        return work.archive_document(document_id, body)
+
+    @api.post('/documents/{document_id}/restore')
+    def restore_document(document_id: str, body: DocumentVersionInput, work=Depends(workspace)):
+        return work.archive_document(document_id, body, restore=True)
+
     @api.put('/documents/{document_id}/activities')
     def activities(document_id: str, body: ActivitiesInput, work=Depends(workspace)):
         return work.save_activities(document_id, body)
 
     @api.get('/declarations')
-    def declarations(work=Depends(workspace)):
-        return work.declarations()
+    def declarations(period: Period = '2026-09', work=Depends(workspace)):
+        return work.declarations(period)
 
     @api.put('/declarations/{code}')
     def declaration(code: str, body: DeclarationInput, work=Depends(workspace)):
         return work.save_declaration(code, body)
 
     @api.get('/questionnaires')
-    def requests(work=Depends(workspace)):
-        return work.requests()
+    def requests(period: Period = '2026-09', work=Depends(workspace)):
+        return work.requests(period)
 
     @api.post('/questionnaires', status_code=201)
     def create_request(body: QuestionnaireInput, work=Depends(workspace)):
@@ -163,10 +175,11 @@ def create_app(*, settings=None, session_factory=None, storage=None):
         return work.approve(identifier, body)
 
     @api.get('/shares')
-    def shares(work=Depends(workspace)):
+    def shares(period: Period = '2026-09', work=Depends(workspace)):
         work.require_owner()
         return [work.serialize_pack(pack) for pack in work.db.scalars(select(ApprovedSnapshot).where(
-            ApprovedSnapshot.company_id == settings.company_id).order_by(ApprovedSnapshot.created_at.desc()))]
+            ApprovedSnapshot.company_id == settings.company_id).order_by(ApprovedSnapshot.created_at.desc()))
+            if pack.snapshot.get('period') == period]
 
     @api.get('/shares/{token}')
     def share(token: str, work=Depends(customer_workspace)):

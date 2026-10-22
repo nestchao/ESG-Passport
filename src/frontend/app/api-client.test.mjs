@@ -33,3 +33,9 @@ test('public share decorates selected evidence only and sends no identity',async
  let call;const api=createApiClient({baseUrl:'http://localhost:8000',fetchImpl:async(...args)=>{call=args;return json({token:'a/b',snapshot:{selected_evidence_ids:['one'],evidence:[{id:'one',preview_url:'blob:old'},{id:'two',preview_url:'blob:private'}]}});}});
  const pack=await api.request('/shares/a%2Fb',{},'customer');assert.equal(call[1].headers.has('X-Demo-Role'),false);assert.equal(pack.snapshot.evidence[0].preview_url,'http://localhost:8000/shares/a%2Fb/evidence/one');assert.equal(pack.snapshot.evidence[1].preview_url,undefined);
 });
+
+test('duplicate conflict identifies the saved record without exposing internal metadata',async()=>{
+ const existing={message:'Already uploaded.',document_id:'saved',period:'2026-07',archived:true};
+ const api=createApiClient({fetchImpl:async()=>json({detail:existing},409)});
+ await assert.rejects(api.request('/documents'),error=>error.existingDocument?.id==='saved'&&error.existingDocument.period==='2026-07'&&error.existingDocument.archived===true);
+});

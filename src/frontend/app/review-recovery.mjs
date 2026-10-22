@@ -7,7 +7,7 @@ export function recommendedEvidence(request) {
   return unique(list(request?.questions).filter(question => question.reviewed).flatMap(question => list(question.evidence_ids)));
 }
 export function retainEvidenceSelection(selectedIds, documents) {
-  const valid = new Set(list(documents).map(document => document.id));
+  const valid = new Set(list(documents).filter(document=>!document.archived&&!document.unavailable).map(document => document.id));
   return unique(list(selectedIds)).filter(id => valid.has(id));
 }
 export function evidenceSelection(request, selectedIds, documents) {

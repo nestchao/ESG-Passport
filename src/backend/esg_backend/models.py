@@ -44,6 +44,8 @@ class Document(Base):
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     activity_revision: Mapped[int] = mapped_column(Integer, default=0)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    archived_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     extraction: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     original_extraction: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     uploaded_by: Mapped[str] = mapped_column(String(255), default='')
@@ -150,6 +152,7 @@ class ActivityEvent(Base):
     __tablename__ = 'activity_events'
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=uuidstr)
     company_id: Mapped[str] = mapped_column(ForeignKey('companies.id', ondelete='CASCADE'), index=True)
+    period: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     actor: Mapped[str] = mapped_column(String(255), default='')
     role: Mapped[str] = mapped_column(String(64), default='')
     action: Mapped[str] = mapped_column(String(128), default='')
