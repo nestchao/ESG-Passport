@@ -1,0 +1,2 @@
+export type SourceState={status:'idle'|'loading'|'ready'|'error';url:string;error:string};
+export function createEvidenceLoader(options:{details:(id:string)=>Promise<any>;preview:(id:string)=>Promise<string>;onDetails:(value:any,context:any)=>void;onSource:(state:SourceState)=>void;revoke:(url:string)=>void}):{open:(id:string,context:any)=>Promise<void>;retry:(id:string)=>Promise<void>;cancel:()=>void};

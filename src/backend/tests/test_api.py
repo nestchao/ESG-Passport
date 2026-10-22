@@ -347,3 +347,137 @@ def test_unselected_source_metadata_not_exposed_in_customer_snapshot(workspace):
             assert metric['evidence_ids'] == []
             assert all(not item.get('evidence_id') for item in metric.get('confirmation_history', []))
             assert all(not item.get('evidence_ids') for item in metric.get('components', []))
+
+
+def count_selects(workspace, path):
+    from sqlalchemy import event
+    client, sessions, *_ = workspace
+    statements = []
+    def capture(conn, cursor, statement, parameters, context, executemany):
+        if statement.lstrip().upper().startswith('SELECT'):
+            statements.append(statement)
+    engine = sessions.kw['bind']
+    event.listen(engine, 'before_cursor_execute', capture)
+    try:
+        result = get(client, path)
+    finally:
+        event.remove(engine, 'before_cursor_execute', capture)
+    return result, statements
+
+
+def test_document_queries_do_not_scale_with_document_count(workspace):
+    from esg_backend.models import Document, Activity
+    client, sessions, *_ = workspace
+    before, initial = count_selects(workspace, '/documents')
+    with sessions() as session:
+        source = session.get(Document, 'doc-water')
+        activity = session.scalar(select(Activity).where(Activity.document_id == source.id))
+        for index in range(12):
+            session.add(Document(id=f'scale-doc-{index}', company_id=source.company_id,
+                name='More water', type='water', period=source.period, file_hash=f'scale-{index}',
+                object_path=f'scale/{index}', activity_revision=2))
+            session.flush()
+            for revision in (1, 2):
+                session.add(Activity(company_id=source.company_id, document_id=f'scale-doc-{index}',
+                    revision=revision, category='water', quantity=revision, unit='m3',
+                    period_start=activity.period_start, period_end=activity.period_end))
+        session.commit()
+    after, scaled = count_selects(workspace, '/documents')
+    assert len(after) == len(before) + 12
+    extra = next(d for d in after if d['id'] == 'scale-doc-0')
+    assert [a['revision'] for a in extra['history']] == [1, 2]
+    assert [a['revision'] for a in extra['activities']] == [2]
+    assert 'object_path' not in extra and 'file_hash' not in extra
+    assert len(scaled) == len(initial) <= 3
+
+
+def test_questionnaire_queries_do_not_scale_with_request_count(workspace):
+    from esg_backend.models import Questionnaire, Question
+    client, sessions, *_ = workspace
+    before, initial = count_selects(workspace, '/questionnaires')
+    with sessions() as session:
+        for index in range(8):
+            session.add(Questionnaire(id=f'scale-request-{index}', company_id='lim-carton',
+                customer='Scaling customer', period='2026-09'))
+            session.flush()
+            for position in (2, 0, 1):
+                session.add(Question(questionnaire_id=f'scale-request-{index}',
+                    position=position, text=f'Water {position}'))
+        session.commit()
+    after, scaled = count_selects(workspace, '/questionnaires')
+    assert len(after) == len(before) + 8
+    extra = next(r for r in after if r['id'] == 'scale-request-0')
+    assert [q['position'] for q in extra['questions']] == [0, 1, 2]
+    assert len(scaled) == len(initial) <= 7
+
+
+def test_profile_reads_only_current_activity_revisions(workspace):
+    from sqlalchemy import event
+    from esg_backend.models import Activity
+    client, sessions, *_ = workspace
+    loaded = []
+    def capture(session, instance):
+        if isinstance(instance, Activity):
+            loaded.append(instance.revision)
+    with sessions() as session:
+        current = session.scalar(select(Activity).where(Activity.document_id == 'doc-water'))
+        session.add(Activity(company_id=current.company_id, document_id=current.document_id,
+            revision=0, category='water', quantity=99999, unit=current.unit,
+            period_start=current.period_start, period_end=current.period_end))
+        session.commit()
+    event.listen(sessions.class_, 'loaded_as_persistent', capture)
+    try:
+        profile, statements = count_selects(workspace, '/profile')
+    finally:
+        event.remove(sessions.class_, 'loaded_as_persistent', capture)
+    assert 0 not in loaded
+    assert len(statements) <= 5
+    assert next(m for m in profile['metrics'] if m['code'] == 'E3.1')['value'] == '10000'
+
+
+def test_company_reuse_is_local_and_lock_always_refreshes(workspace):
+    from esg_backend.models import Company
+    from esg_backend.service import Workspace
+    from sqlalchemy import event, update
+    _, sessions, storage, settings = workspace
+    with sessions() as session:
+        work = Workspace(session, storage, settings)
+        first = work.company()
+        seen = []
+        def capture(orm_state):
+            if orm_state.is_select:
+                seen.append(orm_state.statement)
+        event.listen(session, 'do_orm_execute', capture)
+        assert work.company() is first
+        assert len(seen) == 0
+        session.execute(update(Company).where(Company.id == first.id).values(version=9),
+                        execution_options={'synchronize_session': False})
+        locked = work.company(lock=True)
+        assert locked.version == 9
+        assert seen[-1]._for_update_arg is not None
+        assert seen[-1].get_execution_options()['populate_existing']
+        work.company(lock=True)
+        assert len(seen) == 2
+        session.rollback()
+    with sessions() as session:
+        assert Workspace(session, storage, settings).company().version == 1
+
+
+
+def test_current_activity_batch_uses_captured_document_revision(workspace):
+    from sqlalchemy import update
+    from esg_backend.models import Document, Activity
+    from esg_backend.service import Workspace
+    _, sessions, storage, settings = workspace
+    with sessions() as session:
+        work = Workspace(session, storage, settings)
+        doc = work.document('doc-water')
+        captured_revision = doc.activity_revision
+        original = session.scalar(select(Activity).where(Activity.document_id == doc.id, Activity.revision == captured_revision))
+        session.execute(update(Document).where(Document.id == doc.id).values(activity_revision=captured_revision + 1).execution_options(synchronize_session=False))
+        session.add(Activity(company_id=doc.company_id, document_id=doc.id, revision=captured_revision + 1,
+            category='water', quantity=999, unit='m3', period_start=original.period_start, period_end=original.period_end))
+        session.flush()
+        result = work.serialize_documents([doc], include_history=False)[0]
+        assert [entry['revision'] for entry in result['activities']] == [captured_revision]
+        assert result['activities'][0]['quantity'] == format(original.quantity, 'f')

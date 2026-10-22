@@ -11,7 +11,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from PIL import Image
 from pypdf import PdfReader
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, tuple_
 
 from .models import (Activity, ActivityEvent, ApprovedSnapshot, Company, Declaration,
                      Document, FactorVersion, Question, Questionnaire, utcnow)
@@ -79,14 +79,18 @@ class Workspace:
     def __init__(self, session, storage, settings, role='owner'):
         self.db, self.storage, self.settings, self.role = session, storage, settings, role
         self.actor = ACTORS[role]
+        self._company = None
 
     def company(self, lock=False):
+        if not lock and self._company is not None:
+            return self._company
         query = select(Company).where(Company.id == self.settings.company_id)
         if lock:
             query = query.with_for_update().execution_options(populate_existing=True)
         company = self.db.scalar(query)
         if not company:
             raise HTTPException(409, 'Workspace not initialized. Run migrations and the explicit seed command.')
+        self._company = company
         return company
 
     def require_owner(self):
@@ -108,18 +112,36 @@ class Workspace:
             raise HTTPException(404, 'Document not found.')
         return doc
 
-    def serialize_document(self, doc, include_path=False):
-        output = row(doc, *([] if include_path else ['object_path', 'file_hash']))
-        output['activities'] = [row(a, 'company_id', 'document_id') for a in self.db.scalars(
-            select(Activity).where(Activity.document_id == doc.id, Activity.revision == doc.activity_revision)
-            .order_by(Activity.category))]
-        output['history'] = [row(a, 'company_id', 'document_id') for a in self.db.scalars(
-            select(Activity).where(Activity.document_id == doc.id).order_by(Activity.revision, Activity.category))]
-        return output
+    def serialize_documents(self, documents, *, include_path=False, include_history=True):
+        documents = list(documents)
+        if not documents:
+            return []
+        grouped = {doc.id: [] for doc in documents}
+        query = select(Activity).join(Document, Activity.document_id == Document.id).where(
+            Document.company_id == self.settings.company_id,
+            Activity.document_id.in_(grouped))
+        if not include_history:
+            query = query.where(tuple_(Activity.document_id, Activity.revision).in_(
+                [(doc.id, doc.activity_revision) for doc in documents]))
+        for activity in self.db.scalars(query.order_by(Activity.revision, Activity.category)):
+            grouped[activity.document_id].append(row(activity, 'company_id', 'document_id'))
+        results = []
+        for doc in documents:
+            output = row(doc, *([] if include_path else ['object_path', 'file_hash']))
+            history = grouped[doc.id]
+            output['activities'] = [activity for activity in history if activity['revision'] == doc.activity_revision]
+            if include_history:
+                output['history'] = history
+            results.append(output)
+        return results
 
-    def documents(self):
-        return [self.serialize_document(d) for d in self.db.scalars(select(Document).where(
-            Document.company_id == self.settings.company_id).order_by(Document.uploaded_at, Document.id))]
+    def serialize_document(self, doc, include_path=False):
+        return self.serialize_documents([doc], include_path=include_path)[0]
+
+    def documents(self, *, include_history=True):
+        documents = self.db.scalars(select(Document).where(
+            Document.company_id == self.settings.company_id).order_by(Document.uploaded_at, Document.id))
+        return self.serialize_documents(documents, include_history=include_history)
 
     def declarations(self):
         records = self.db.scalars(select(Declaration).where(Declaration.company_id == self.settings.company_id,
@@ -132,7 +154,7 @@ class Workspace:
     def profile(self):
         company = self.company()
         factors = [row(f) for f in self.db.scalars(select(FactorVersion).order_by(FactorVersion.year, FactorVersion.id))]
-        result = calculate_profile(row(company), self.documents(), self.declarations(), factors, company.period)
+        result = calculate_profile(row(company), self.documents(include_history=False), self.declarations(), factors, company.period)
         result['version'] = company.version
         return safe(result)
 
@@ -251,10 +273,26 @@ class Workspace:
             raise HTTPException(404, 'Questionnaire not found.')
         return result
 
-    def serialize_request(self, request):
-        profile = self.profile()
-        questions = self.db.scalars(select(Question).where(Question.questionnaire_id == request.id).order_by(Question.position))
+    def serialize_request(self, request, *, profile=None, questions=None):
+        if profile is None:
+            profile = self.profile()
+        if questions is None:
+            questions = self.db.scalars(select(Question).where(
+                Question.questionnaire_id == request.id).order_by(Question.position))
         return {**row(request), 'questions': [safe(answer_question(row(q), profile)) for q in questions]}
+
+    def requests(self):
+        requests = list(self.db.scalars(select(Questionnaire).where(
+            Questionnaire.company_id == self.settings.company_id).order_by(Questionnaire.created_at)))
+        if not requests:
+            return []
+        profile = self.profile()
+        grouped = {request.id: [] for request in requests}
+        for question in self.db.scalars(select(Question).where(
+                Question.questionnaire_id.in_(grouped)).order_by(Question.position)):
+            grouped[question.questionnaire_id].append(question)
+        return [self.serialize_request(request, profile=profile, questions=grouped[request.id])
+                for request in requests]
 
     def create_request(self, body):
         self.company(lock=True)
