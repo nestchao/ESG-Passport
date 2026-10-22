@@ -15,6 +15,11 @@ test('validation includes nested field paths',async()=>{
  for(const [body,message] of [[{detail:[{loc:['body','activities',0,'quantity'],msg:'Must be non-negative'}]},'activities.0.quantity: Must be non-negative'],[{detail:{field:'period',message:'Invalid month'}},'period: Invalid month']]){
  const api=createApiClient({fetchImpl:async()=>json(body,422)});await assert.rejects(api.request('/documents'),error=>error.message===message&&error.status===422);}
 });
+
+test('validation exposes field errors for inline record feedback',async()=>{
+ const api=createApiClient({fetchImpl:async()=>json({detail:[{loc:['body','activities.0.unit'],msg:'Choose a supported unit.'}]},422)});
+ await assert.rejects(api.request('/documents'),error=>error.fieldErrors?.['activities.0.unit']==='Choose a supported unit.');
+});
 test('403 and 409 preserve backend action messages',async()=>{
  for(const status of [403,409]){const api=createApiClient({fetchImpl:async()=>json({detail:'Review the current draft.'},status)});await assert.rejects(api.request('/shares'),error=>error.status===status&&error.message==='Review the current draft.');}
 });

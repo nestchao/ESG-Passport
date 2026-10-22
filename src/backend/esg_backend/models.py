@@ -112,6 +112,7 @@ class Questionnaire(Base):
     status: Mapped[str] = mapped_column(String(32), default='draft')
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
 class Question(Base):
