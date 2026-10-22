@@ -1,36 +1,40 @@
-# ESG-Passpord
+# ESG Passport
 
-Starter project structure matching the supplied repository screenshot.
-Application code and dependencies have not been added yet.
+Evidence-backed monthly ESG profiles and owner-approved customer questionnaire packs.
 
-## Structure
+## Application
 
-```text
-ESG-Passpord/
-|-- docs/               Project documentation
-|-- runpod/             RunPod deployment notes and configuration
-|-- src/                Application source
-|-- submission/         Submission documents and deliverables
-|-- tests/              Automated tests
-|-- .env.example        Environment variable template
-|-- .gitignore          Local files excluded from Git
-|-- .replit             Replit starter configuration
-|-- LICENSE             Existing Apache License 2.0
-|-- README.md
-`-- requirements.txt    Python dependency list (currently empty)
+- **Frontend:** Next.js and Tailwind in `src/frontend`.
+- **Backend:** FastAPI in `src/backend`.
+- **Persistence:** Supabase Postgres and private Supabase Storage.
+- **Current scope:** one fictional company, September 2026, simulated roles, manual bill review and wording-based question suggestions. No live AI or production authentication.
+
+The frontend now calls the API. It does not fall back to browser fixtures when the API is unavailable. Earlier browser-local records remain untouched and are not imported.
+
+## Start locally
+
+1. Follow [backend setup](src/backend/README.md): create a Python environment, configure the repository-root `.env`, apply Alembic migrations, initialize private Storage and explicitly seed sample records.
+2. Run the backend on `http://127.0.0.1:8000`.
+3. In a second terminal:
+
+```powershell
+cd src\frontend
+npm ci
+npm run dev
 ```
 
-## Configuration
+Open `http://127.0.0.1:3000`. The frontend defaults to port 8000 for its API; set `NEXT_PUBLIC_API_URL` in the repository-root `.env` if needed and restart Next.js. Match `FRONTEND_ORIGIN` in the backend to the exact frontend address and port.
 
-1. Copy `.env.example` to `.env` when local environment variables are needed.
-2. Add application-specific variables to the template without including secrets.
-3. Add source code under `src/` and tests under `tests/`.
-4. Record required Python packages in `requirements.txt` once the stack is chosen.
-5. Set the application start command in `.replit` when an entry point exists.
+Keep only two environment files at the repository root: `.env` for your private local values and `.env.example` as the committed template. Copy the template only when `.env` does not already exist. The backend and Alembic read this root file explicitly; Next.js exports only its `NEXT_PUBLIC_API_URL` value. Shell environment variables take precedence. Restart both services after changing the file.
 
-The current Replit run command only displays a setup message. No application,
-Python environment, dependency installation, or RunPod deployment is included.
+Supabase credentials are backend-only settings in this shared file. Use a dedicated synthetic hackathon project. This milestone keeps the API bound to localhost; customer links can be opened in another browser while both local services run. Hosted sharing and real accounts require the later deployment/authentication work.
 
-## License
+## Verify
 
-See [LICENSE](LICENSE) for the existing Apache License 2.0 terms.
+- Backend: from `src/backend`, run `.venv\Scripts\python.exe -m pytest tests -q --basetemp=.pytest-tmp`.
+- Frontend: from `src/frontend`, run `npm test`, `npm run typecheck` and `npm run build`.
+- Supabase: after setup, run `python -m esg_backend.cli check`; add `--anon-key` with `SUPABASE_PUBLISHABLE_KEY` configured to run browser-access HTTP probes.
+
+Unit/integration tests inject isolated SQLite and fake storage; they do not claim that the hosted Supabase project has been verified. The running API accepts Supabase Postgres configuration only.
+
+Original evidence stays immutable. Corrections and declarations create revisions. New data invalidates draft answers, and owner approval freezes the selected answers, factor versions and evidence. No certification or compliance claim is made.
