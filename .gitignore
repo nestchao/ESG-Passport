@@ -1,14 +1,26 @@
-# Local environment variables and secrets
-/rule/
+# Local files and credentials
+/src/ai/.local/
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# Python environments and generated files
+# Protect earlier AI development locations if recreated
+/docs/reference/
+/src/ai/data/
+/src/ai/scripts/
+/src/ai/experiments/
+/src/ai/rule/
+/src/ai/memory/
+/src/ai/note/
+/src/ai/notes/
+/src/ai/CONSTRAINTS.md
+
+# Environments, caches and build output
 .venv/
 venv/
+node_modules/
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -22,12 +34,10 @@ coverage.xml
 build/
 dist/
 
-# Logs and temporary files
+# Logs, temporary files and editor settings
 *.log
 *.tmp
 *.swp
-
-# Local editor and OS files
 .idea/
 .vscode/
 .DS_Store

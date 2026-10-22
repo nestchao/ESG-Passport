@@ -1,36 +1,33 @@
 # ESG-Passpord
 
-Starter project structure matching the supplied repository screenshot.
-Application code and dependencies have not been added yet.
+ESG-Passpord is a Malaysian SME prototype for turning business documents into
+reviewable ESG activity records and preparing SEDG questionnaire information.
+The intended workflow keeps consequential decisions under human approval and
+records the supporting evidence.
 
-## Structure
+## Project structure
 
-```text
-ESG-Passpord/
-|-- docs/               Project documentation
-|-- runpod/             RunPod deployment notes and configuration
-|-- src/                Application source
-|-- submission/         Submission documents and deliverables
-|-- tests/              Automated tests
-|-- .env.example        Environment variable template
-|-- .gitignore          Local files excluded from Git
-|-- .replit             Replit starter configuration
-|-- LICENSE             Existing Apache License 2.0
-|-- README.md
-`-- requirements.txt    Python dependency list (currently empty)
-```
+| Folder | Purpose |
+|---|---|
+| docs/ | Competition documentation |
+| runpod/ | RunPod configuration and deployment notes |
+| src/ | Application source; AI module belongs under src/ai/ |
+| submission/ | Submission deliverables |
+| tests/ | Application tests |
+
+## Current status
+
+The application is a starter scaffold. A live backend, model integration and
+working deployment have not been implemented. Local research and synthetic-data
+preparation are development materials and are excluded from Git.
 
 ## Configuration
 
-1. Copy `.env.example` to `.env` when local environment variables are needed.
-2. Add application-specific variables to the template without including secrets.
-3. Add source code under `src/` and tests under `tests/`.
-4. Record required Python packages in `requirements.txt` once the stack is chosen.
-5. Set the application start command in `.replit` when an entry point exists.
+Copy .env.example to .env and fill the required values locally. Never commit API
+keys. Configure the application entry point and Replit run command when the
+implementation is ready.
 
-The current Replit run command only displays a setup message. No application,
-Python environment, dependency installation, or RunPod deployment is included.
+## Licence
 
-## License
-
-See [LICENSE](LICENSE) for the existing Apache License 2.0 terms.
+Project code uses Apache License 2.0; see LICENSE. Third-party materials retain
+their own licences and notices.
