@@ -1,8 +1,10 @@
 # ESG Passport backend
 
-FastAPI persists the synthetic monthly workspace in Supabase Postgres and stores original PNG/JPEG/PDF evidence in a private Supabase Storage bucket. Calculations use decimal arithmetic and confirmed activity revisions. Automatic OCR and live AI are not connected: extracted fields require manual entry and human confirmation; questionnaire suggestions use deterministic wording matching.
+FastAPI persists the synthetic monthly workspace in Supabase Postgres and stores original PNG/JPEG/PDF evidence in a private Supabase Storage bucket. Calculations use decimal arithmetic and confirmed activity revisions. Offline RapidOCR extracts *candidate* quantities and billing dates from supported images and single-page PDFs into the existing record editor; human correction and confirmation remain required. The PR #9 deterministic AI workflow assists bilingual questionnaire mapping, evidence coverage, calculation provenance and explicit owner gap acknowledgement. There is no external LLM service, independent evidence assurance or automatic certification.
 
 This is a local prototype. The role switch / `X-Demo-Role` header is a demonstration of owner, clerk and customer permissions, not real authentication. Keep local direct access bound to `127.0.0.1`. The [protected Render hackathon deployment](../../docs/DEPLOY-RENDER.md) adds a server key and shared website password; real-user deployment still requires identity, authorization and tenant isolation. Browser roles receive no direct database table privileges. Only the Python server receives the database password and Supabase server key.
+
+Python 3.12 is required by the offline RapidOCR dependency. The Render backend and GitHub Actions checks use the same version; the frontend continues to use Node 22.
 
 ## Windows setup
 
@@ -78,3 +80,44 @@ Duplicate-file 409 responses include the existing document ID, assigned period a
 ## Protected hosted demo
 
 On Render, DEMO_ACCESS_ENABLED=true and BACKEND_SHARED_KEY (at least 32 characters) are required; invalid demo protection fails startup. ALLOW_SAMPLE_RESET must remain false. Every route except GET /health requires X-Demo-Backend-Key from the frontend server proxy. Existing role checks and pack-token/evidence checks still apply. See [the Render guide](../../docs/DEPLOY-RENDER.md) for setup and automatic updates.
+
+## Delete a record (Owner only)
+
+Records offers **Archive** (reversible) and **Delete** (permanent) separately.
+The Owner can delete an active or archived record only after typing `DELETE` in
+the confirmation dialog. The API requires the record's current version:
+`DELETE /documents/{document_id}` with JSON `{"expected_version": <version>}`.
+This permanently removes the original object and all activity revisions,
+invalidates current questionnaire drafts and calculations, and keeps an audit
+event recording the actor and reporting month. Deletion is rejected if an
+approved customer Passport or any historical owner declaration references
+the record. Use Archive to retain historical/audited evidence.
+
+For this prototype the Owner role is simulated. Real-world permanent deletion
+requires production identity and retention-policy controls before rollout.
+
+## Waste weighbridge OCR (unclassified transfer weight)
+
+A waste transfer/weighbridge ticket can include a NET / BERAT BERSIH weight
+without proving it is waste **generated**, **diverted** or **disposed**.
+Offline OCR stores a `waste_transfer_candidate` with net mass, unit, point
+date and source line while leaving the ESG waste activity category blank. The
+existing Records editor pre-fills that unclassified quantity for human review.
+The user must select the applicable category using additional evidence, and
+the record reporting month must match the source date before confirmation.
+GROSS and TARE are not used as the reported quantity; where all three weights
+are readable the net amount is checked against gross-minus-tare. Original
+documents and first-pass OCR are retained. Existing unconfirmed records with
+previously failed OCR can be reopened for read-only candidate recovery.
+
+### Suggested waste classification (offline, unverified)
+
+When a weighbridge ticket with a net weight has an explicit **declared route**
+(e.g., `Tujuan: RECYCLING` or `Route: LANDFILL`), the backend provides a
+low-confidence `waste_category_suggestion`. This is deterministic text-based
+assistance, **not a trained LLM**, independent assurance, or proof that the
+route was fulfilled. Contradictory, unknown, or negated route text produces no
+suggestion. The existing Records form displays the reason and source wording,
+with **Use suggested category** as a separate user action. No category is
+selected or entered into calculations without human action and the normal
+record confirmation. Original OCR and reporting-month safeguards still apply.

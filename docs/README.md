@@ -1,4 +1,6 @@
-# Documentation
+# Competition documentation
 
-Place project requirements, architecture notes, setup instructions, and user
-guides here as the application takes shape.
+Store the team's competition documents here, including the product requirements,
+technical and tools declaration, pitch materials and final report as required.
+
+Personal development notes and research files are excluded from version control.

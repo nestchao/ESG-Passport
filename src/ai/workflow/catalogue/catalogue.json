@@ -1,0 +1,204 @@
+{
+  "catalogue_version": "sedg-v2-five-basic-0.2.0",
+  "checked_on": "2026-10-23",
+  "framework": "Malaysia CMM SEDG Version 2, July 2025; not a complete catalogue",
+  "labels_are_project_paraphrases": true,
+  "entries": [
+    {
+      "code": "E1.1",
+      "label": "Direct GHG emissions",
+      "level": "basic",
+      "supported": true,
+      "metric_ids": [
+        "scope1_emissions"
+      ],
+      "catalogue_units": [
+        "tCO2e"
+      ],
+      "accepted_question_units": [
+        "tCO2e",
+        "kgCO2e"
+      ],
+      "calculation_inputs_required": [
+        "activity_by_source",
+        "fuel_or_refrigerant_type",
+        "organisational_boundary",
+        "factor_source_and_vintage",
+        "calculation_method"
+      ],
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7,
+      "boundary_policy": "Explicit company/site boundary; no automatic operational-control or site-only default."
+    },
+    {
+      "code": "E1.2",
+      "label": "Purchased-energy indirect GHG emissions",
+      "level": "basic",
+      "supported": true,
+      "metric_ids": [
+        "scope2_emissions"
+      ],
+      "catalogue_units": [
+        "tCO2e"
+      ],
+      "accepted_question_units": [
+        "tCO2e",
+        "kgCO2e"
+      ],
+      "calculation_inputs_required": [
+        "purchased_energy",
+        "organisational_boundary",
+        "site_grid_region",
+        "gef_vintage",
+        "factor_source",
+        "accounting_method"
+      ],
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7,
+      "boundary_policy": "Explicit company/site boundary; no automatic operational-control or site-only default."
+    },
+    {
+      "code": "E2.1",
+      "label": "Energy consumption",
+      "level": "basic",
+      "supported": true,
+      "metric_ids": [
+        "energy_consumption",
+        "electricity_consumption",
+        "fuel_consumption_energy"
+      ],
+      "catalogue_units": [
+        "Wh",
+        "J"
+      ],
+      "accepted_question_units": [
+        "Wh",
+        "kWh",
+        "MWh",
+        "MJ",
+        "GJ",
+        "L"
+      ],
+      "calculation_inputs_required": [],
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7,
+      "boundary_policy": "Explicit company/site boundary; no automatic operational-control or site-only default."
+    },
+    {
+      "code": "E3.1",
+      "label": "Water withdrawal by source",
+      "level": "basic",
+      "supported": true,
+      "metric_ids": [
+        "water_withdrawal"
+      ],
+      "catalogue_units": [
+        "L"
+      ],
+      "accepted_question_units": [
+        "L",
+        "m3"
+      ],
+      "calculation_inputs_required": [],
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7,
+      "boundary_policy": "Explicit company/site boundary; no automatic operational-control or site-only default."
+    },
+    {
+      "code": "E4.1",
+      "label": "Waste flow totals",
+      "level": "basic",
+      "supported": true,
+      "metric_ids": [
+        "waste_generated",
+        "waste_diverted",
+        "waste_disposed"
+      ],
+      "catalogue_units": [
+        "t"
+      ],
+      "accepted_question_units": [
+        "kg",
+        "t"
+      ],
+      "calculation_inputs_required": [],
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 8,
+      "boundary_policy": "Explicit company/site boundary; no automatic operational-control or site-only default."
+    },
+    {
+      "code": "E1.3",
+      "label": "Scope 1 reductions",
+      "level": "intermediate",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E1.4",
+      "label": "Scope 2 reductions",
+      "level": "intermediate",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E1.5",
+      "label": "Scope 3 emissions",
+      "level": "advanced",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E1.7",
+      "label": "Scope 1 and 2 intensity",
+      "level": "advanced",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E2.2",
+      "label": "Energy reductions",
+      "level": "intermediate",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E3.2",
+      "label": "Water reductions",
+      "level": "intermediate",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 7
+    },
+    {
+      "code": "E4.2",
+      "label": "Waste breakdowns",
+      "level": "intermediate",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 8
+    },
+    {
+      "code": "S4.1",
+      "label": "Occupational injuries and fatalities",
+      "level": "basic",
+      "supported": false,
+      "source_url": "https://sedg.capitalmarketsmalaysia.com/wp-content/uploads/2025/07/SEDG-v2.pdf",
+      "printed_page": 9
+    }
+  ],
+  "water_source_types": [
+    "purchased",
+    "surface",
+    "groundwater",
+    "seawater",
+    "produced"
+  ],
+  "emissions_policy": "Never substitute activity units for emissions. Reviewed reported/calculated emissions can be evidence if boundary, period and method pass review.",
+  "factor_policy": "No default GEF or emissions factors. Explicit reviewed source, vintage, region and accounting method required.",
+  "scope2_extension_limit": "This prototype screens grid electricity. Other purchased energy needs manual specialist review."
+}

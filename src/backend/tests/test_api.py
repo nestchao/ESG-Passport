@@ -89,10 +89,27 @@ def reviewed(client):
     return get(client, '/questionnaires/request-1')
 
 
+def approve_with_ack(client, identifier, body):
+    """Test helper: simulate the owner EXPLICITLY acknowledging all listed gaps.
+
+    Production callers must show the issues to a real owner; this helper is
+    only for controlled approval-flow regression tests.
+    """
+    response = client.post(f'/questionnaires/{identifier}/approve-share', headers=OWNER, json=body)
+    if response.status_code == 409 and isinstance(response.json().get('detail'), dict):
+        review = response.json()['detail'].get('pr9_review')
+        if review is not None:
+            response = client.post(f'/questionnaires/{identifier}/approve-share', headers=OWNER,
+                json={**body, 'pr9_review_hash': review['hash'],
+                      'acknowledged_issues': [item['id'] for item in review['items']],
+                      'pr9_review_reason': 'The owner reviewed every listed gap in this test.'})
+    return response
+
+
 def approve(client, request, selected=None):
-    response = client.post(f'/questionnaires/{request["id"]}/approve-share', headers=OWNER,
-                           json={'version': request['version'], 'recipient': 'Meridian Foods',
-                                 'selected_evidence_ids': selected or ['doc-water']})
+    response = approve_with_ack(client, request['id'],
+        {'version': request['version'], 'recipient': 'Meridian Foods',
+         'selected_evidence_ids': ['doc-water'] if selected is None else selected})
     assert response.status_code == 200, response.text
     return response.json()
 
@@ -336,8 +353,8 @@ def test_unselected_source_metadata_not_exposed_in_customer_snapshot(workspace):
     client, *_ = workspace
     confirm(client, 'doc-electricity')
     request = reviewed(client)
-    response = client.post('/questionnaires/request-1/approve-share', headers=OWNER,
-                           json={'version': request['version'], 'recipient': 'Buyer', 'selected_evidence_ids': []})
+    response = approve_with_ack(client, 'request-1',
+        {'version': request['version'], 'recipient': 'Buyer', 'selected_evidence_ids': []})
     assert response.status_code == 200
     snapshot = response.json()['snapshot']
     assert snapshot['evidence'] == []

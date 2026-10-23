@@ -43,7 +43,7 @@ def create_app(*, settings=None, session_factory=None, storage=None):
 
     api = FastAPI(title='ESG Passport API', version='1.0.0', lifespan=lifespan)
     api.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_origin],
-                       allow_methods=['GET', 'POST', 'PUT'], allow_headers=['Content-Type', 'X-Demo-Role'])
+                       allow_methods=['GET', 'POST', 'PUT', 'DELETE'], allow_headers=['Content-Type', 'X-Demo-Role'])
     api.state.settings = settings
 
     @api.middleware('http')
@@ -96,7 +96,8 @@ def create_app(*, settings=None, session_factory=None, storage=None):
         try:
             with session_factory() as db:
                 db.execute(text('SELECT 1'))
-            return {'status': 'ok', 'synthetic_only': True, 'ai_enabled': False}
+            return {'status': 'ok', 'synthetic_only': True, 'ai_enabled': True,
+                    'ai_mode': 'offline_deterministic', 'ocr_enabled': True}
         except SQLAlchemyError:
             return JSONResponse(status_code=503, content={'status': 'unavailable', 'detail': 'Cannot connect to Supabase Postgres.'})
 
@@ -140,6 +141,10 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     @api.put('/documents/{document_id}')
     def update_document(document_id: str, body: DocumentUpdateInput, work=Depends(workspace)):
         return work.update_document(document_id, body)
+
+    @api.delete('/documents/{document_id}')
+    def delete_document(document_id: str, body: DocumentVersionInput, work=Depends(workspace)):
+        return work.delete_document(document_id, body)
 
     @api.post('/documents/{document_id}/archive')
     def archive_document(document_id: str, body: DocumentVersionInput, work=Depends(workspace)):

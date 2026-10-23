@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "note": "Project bilingual patterns; not certified official translations. Malay edition/version equivalence not assumed.",
+  "pairs": {
+    "scope": [
+      "scope",
+      "skop"
+    ],
+    "emissions": [
+      "emissions",
+      "GHG",
+      "pelepasan",
+      "emisi"
+    ],
+    "energy": [
+      "energy consumption",
+      "penggunaan tenaga"
+    ],
+    "electricity": [
+      "electricity",
+      "elektrik"
+    ],
+    "water": [
+      "water withdrawal",
+      "water withdrawn",
+      "pengambilan air",
+      "air diambil"
+    ],
+    "waste_generated": [
+      "waste generated",
+      "sisa dijana"
+    ],
+    "waste_diverted": [
+      "waste diverted",
+      "sisa dialihkan"
+    ],
+    "waste_disposed": [
+      "waste disposed",
+      "sisa dilupuskan"
+    ]
+  }
+}

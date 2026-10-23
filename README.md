@@ -7,7 +7,7 @@ Evidence-backed monthly ESG profiles and owner-approved customer questionnaire p
 - **Frontend:** Next.js and Tailwind in `src/frontend`.
 - **Backend:** FastAPI in `src/backend`.
 - **Persistence:** Supabase Postgres and private Supabase Storage.
-- **Current scope:** one fictional company, September 2026, simulated roles, manual bill review and wording-based question suggestions. No live AI or production authentication.
+- **Current scope:** one fictional company, September 2026, simulated roles, offline OCR-assisted bill review and reviewed bilingual SEDG question mapping. No external LLM or production user accounts.
 
 The frontend now calls the API. It does not fall back to browser fixtures when the API is unavailable. Earlier browser-local records remain untouched and are not imported.
 
@@ -42,3 +42,24 @@ Original evidence stays immutable. Corrections and declarations create revisions
 ## Hosted hackathon demo
 
 [Deploy on Render and enable automatic updates](docs/DEPLOY-RENDER.md). The Blueprint creates two free services with a shared demo gate. It watches main; pushing only to Boon does not update the hosted demo. No automatic migrations, resets or seeding run.
+
+## Integrated offline AI and OCR (test branch)
+
+The offline [PR #9 AI workflow](src/ai/workflow/README.md) is connected to
+existing questionnaire mapping, evidence coverage, preliminary preparation,
+and owner review. New image/single-page PDF uploads run offline RapidOCR to
+suggest consumption values; clerks must verify them before confirming.
+
+Owner **Approve & Share** requires explicit acknowledgement and a reason for
+**each** outstanding PR #9 limitation. Unresolved measurements remain gaps,
+not verified disclosures. The approved internal PR #9 audit/preparation is
+kept private, and public packs include only selected evidence and disclosed
+limitations. Existing demo protections on Render still apply: these are not
+production authentication or independent assurance.
+
+Run full backend and frontend tests after merging this branch with main. This
+branch does not change the project's synthetic-only demonstration scope.
+The [synthetic dataset](src/ai/synthetic_dataset/README.md),
+[generator](src/ai/synthetic_generator/README.md), and
+[OCR comparison](src/ai/comparison/README.md) are research/test material,
+not runtime data sources. The generator requires separate dependencies.

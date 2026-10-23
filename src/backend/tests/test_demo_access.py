@@ -21,7 +21,11 @@ def test_protected_backend_requires_key_even_with_owner_or_pack_token(workspace)
         assert client.get('/documents', headers={'X-Demo-Role': 'owner', 'X-Demo-Backend-Key': 'wrong'}).status_code == 401
         assert client.get('/documents', headers={'X-Demo-Role': 'owner', 'X-Demo-Backend-Key': KEY}).status_code == 200
         assert client.get('/documents', headers={'X-Demo-Backend-Key': KEY}).status_code == 401
-        assert client.get('/health').status_code == 200
+        status = client.get('/health')
+        assert status.status_code == 200
+        assert status.json()['ai_mode'] == 'offline_deterministic'
+        assert status.json()['ai_enabled'] is True
+        assert status.json()['ocr_enabled'] is True
         assert client.post('/health').status_code == 401
 
 

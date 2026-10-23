@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "document": "staff-register.txt",
+  "label_status": "team-authored fictional assertions; independent review pending",
+  "document_kind": "staff_record",
+  "organisation_id": "demo-org",
+  "site_id": "demo-site",
+  "consolidation_method": "operational_control",
+  "period": {"start": "2026-01-01", "end": "2026-09-30"},
+  "observations": [
+    {"record_id": "SR-01", "metric_id": "electricity_consumption", "value": "4200", "unit": "kWh", "location": {"page": 1, "text": "Staff estimate of electricity consumed: 4,200 kWh."}},
+    {"record_id": "SR-02", "metric_id": "water_withdrawal", "value": "36", "unit": "m3", "source": "purchased", "location": {"page": 1, "text": "Staff estimate of purchased water withdrawn: 36 m3."}},
+    {"record_id": "SR-03", "metric_id": "fuel_purchased", "value": "180", "unit": "L", "source": "diesel", "location": {"page": 1, "text": "Diesel purchased: 180 litres. Fuel consumed: unknown."}},
+    {"record_id": "SR-04", "metric_id": "waste_transferred", "value": "250", "unit": "kg", "location": {"page": 1, "text": "Waste handed to collector: 250 kg. Final treatment/destination: unknown."}}
+  ],
+  "manual_only_assertions": [
+    {"record_id": "SR-05", "topic": "training", "text": "24 hours across 6 employees", "state": "manual_handling_required", "missing": ["attendance_records", "population_basis"]},
+    {"record_id": "SR-06", "topic": "injuries_and_fatalities", "text": "Reported injuries: 0; fatalities: 0.", "state": "manual_handling_required", "missing": ["incident_register"]},
+    {"record_id": "SR-07", "topic": "health_and_safety_policy", "text": "Staff says a health and safety policy exists.", "state": "manual_handling_required", "missing": ["policy_copy", "approval_date"]}
+  ]
+}

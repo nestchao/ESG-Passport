@@ -1,0 +1,40 @@
+SYNTHETIC DEMO / REKOD REKAAN — NOT A REAL COMPANY RECORD
+Fictional organisation: Demo Kebun Biru; site: demo-site; organisation ID: demo-org
+Prepared by: Demo Staff A (fictional); entered 23 October 2026
+Reporting period: 1 January 2026 to 30 September 2026
+All entries are SELF-DECLARED. No supporting documents attached.
+
+SR-01 Electricity / Elektrik
+Staff estimate of electricity consumed: 4,200 kWh.
+Method: recollection of monthly meter notes; original notes unavailable.
+Do not treat this as a utility-confirmed meter reading or full-year coverage.
+
+SR-02 Water / Air
+Staff estimate of purchased water withdrawn: 36 m3.
+Other sources (surface, groundwater, seawater, produced): applicability unknown.
+No bill attached. Do not infer missing sources are zero.
+
+SR-03 Fuel / Bahan api
+Diesel purchased: 180 litres. Fuel consumed: unknown.
+Opening stock, closing stock, vehicle allocation and business-use split: unknown.
+This is not a Scope 1 calculation or proof of fuel consumption.
+
+SR-04 Waste / Sisa
+Waste handed to collector: 250 kg. Final treatment/destination: unknown.
+Generated, recycled and disposed totals cannot be established from this entry.
+
+SR-05 Training / Latihan (manual handling outside supported mapper scope)
+Staff-reported total training time: 24 hours across 6 employees in this period.
+Attendance sheets and employee population basis: unavailable; no approved average.
+
+SR-06 Injuries / Kecederaan (manual handling outside supported mapper scope)
+Reported injuries: 0; fatalities: 0. Incident register not attached.
+These are explicit staff assertions, not inferred zeros or assurance conclusions.
+
+SR-07 Policies / Polisi (manual handling outside supported mapper scope)
+Staff says a health and safety policy exists. No policy copy or approval date.
+Treat as an uncorroborated statement; request supporting policy and owner review.
+
+Reviewer decision: pending. Evidence strength: LOW / RENDAH.
+Default review priority: P2; conflicts or consequential gaps: P1.
+All values remain fictional even after a simulated review.

@@ -1,0 +1,35 @@
+{
+  "status": "pass",
+  "images": 360,
+  "base_documents": 120,
+  "category_counts": {
+    "electricity": 90,
+    "water": 90,
+    "fuel": 90,
+    "waste": 90
+  },
+  "model_calls": 0,
+  "checks": [
+    "SHA-256",
+    "unique images",
+    "PNG decoding",
+    "field vocabulary",
+    "evidence links",
+    "polygon bounds",
+    "temporal semantics",
+    "arithmetic",
+    "capture parameters",
+    "base-grouped splits",
+    "file completeness"
+  ],
+  "human_visibility_review": "pending",
+  "limitations": "Intended-label checks only; no OCR accuracy or real-world validity claim.",
+  "json_schema_annotations_checked": 360,
+  "standalone_reproduction": {
+    "images_byte_identical": 360,
+    "annotations_byte_identical": 360,
+    "revision_marker_metadata_reconciled": 240,
+    "model_calls": 0
+  },
+  "public_file_allowlist_checked": 738
+}

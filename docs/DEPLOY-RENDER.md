@@ -72,4 +72,3 @@ Local development stays frontend 3000 and backend 8001, with DEMO_ACCESS_ENABLED
 References: https://render.com/docs/blueprint-spec and https://render.com/docs/deploys and https://render.com/docs/free
 
 Render automatically provides the frontend RENDER_EXTERNAL_URL used to check login/save origins behind HTTPS termination. If you later use a custom domain, set frontend DEMO_PUBLIC_ORIGIN to that exact HTTPS origin and redeploy. Leave it unset for the normal Render address. Changing DEMO_SESSION_SECRET invalidates existing demo sessions.
-

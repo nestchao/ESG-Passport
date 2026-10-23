@@ -4,6 +4,18 @@ export function categoryLabel(code) {return LABELS[code] || String(code || 'Reco
 export function allowedCategories(type) {return type==='waste'?['waste_generated','waste_diverted','waste_disposed']:UNITS[type]?[type]:[];}
 export function allowedUnits(category) {return [...(UNITS[category] || [])];}
 export function cleanDecimal(value) {const text=String(value ?? '').trim();if(!text.includes('.')||/[eE]/.test(text))return text;return text.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');}
+// A weighbridge ticket establishes a net transfer weight, NOT an ESG outcome.
+// Prefill only the numeric/date fields. Category MUST remain unselected until
+// an authorised reviewer uses supporting evidence to classify the transfer.
+export function unclassifiedWasteTransferRows(document) {
+ const candidate=document?.type==='waste'&&document?.extraction?.waste_transfer_candidate;
+ if(!candidate||!['kg','t'].includes(candidate.unit)||!/^\d+(?:\.\d+)?$/.test(String(candidate.quantity))||
+    !/^\d{4}-\d{2}-\d{2}$/.test(candidate.period_start)||!/^\d{4}-\d{2}-\d{2}$/.test(candidate.period_end))return [];
+ return [{category:'',quantity:String(candidate.quantity),unit:candidate.unit,
+          period_start:candidate.period_start,period_end:candidate.period_end,
+          source_reference:candidate.source_reference||'OCR net transfer weight; not a verified waste outcome',
+          estimated:false,assumptions:'',allocated_period:null}];
+}
 export function normaliseActivities(rows) {return rows.map(row=>({...row,quantity:cleanDecimal(row.quantity)}));}
 export function activityKey(rows) {return JSON.stringify(rows.map(row=>({category:row.category||'',quantity:cleanDecimal(row.quantity),unit:row.unit||'',period_start:row.period_start||'',period_end:row.period_end||'',estimated:!!row.estimated,assumptions:row.assumptions||'',allocated_period:row.allocated_period||null})));}
 function validQuantity(value) {

@@ -1,2 +1,8 @@
-# Backend dependencies. The Next.js frontend uses src/frontend/package.json.
+# Application backend and offline workflow core.
+# Install with uv targeting an explicit approved project environment.
+# Next.js uses src/frontend/package.json.
 -r src/backend/requirements.txt
+-r src/ai/workflow/requirements.txt
+
+# Synthetic generation uses its own environment and dependency file:
+# src/ai/synthetic_generator/requirements.txt (Pillow 13 vs backend Pillow <13).
