@@ -18,7 +18,7 @@ test('sessions reject tampering malformed tokens expiry and future issuance',()=
  assert.match(sessionCookie(token),/HttpOnly; Secure; SameSite=Lax/);assert.match(sessionCookie(token),/Max-Age=28800/);
 });
 test('workspace shares evidence and API require session',()=>{
- assert.equal(accessGate(req('/?share=secret'),cfg()).headers.get('location'),'/login?next=%2F%3Fshare%3Dsecret');
+ assert.equal(accessGate(req('/?share=secret'),cfg()).headers.get('location'),origin+'/login?next=%2F%3Fshare%3Dsecret');
  assert.equal(accessGate(req('/api/backend/shares/token/evidence/id'),cfg()).status,401);
  assert.equal(accessGate(req('/',{headers:{cookie:cookie()}}),cfg()),null);
  assert.equal(accessGate(req('/'),getDemoConfig({})),null);assert.equal(accessGate(req('/login'),cfg()),null);
@@ -32,6 +32,32 @@ test('login throttling logout and origin checks',async()=>{
  assert.equal((await handleLogin(req('/api/demo/login',{method:'POST',headers:{origin:'https://evil.example'}}),cfg(),limiter)).status,403);
  assert.match(handleLogout(req('/api/demo/logout',{method:'POST',headers:{origin}}),cfg()).headers.get('set-cookie'),/Max-Age=0/);
  assert.equal(handleLogout(req('/api/demo/logout',{method:'POST'}),cfg()).status,403);
+});
+test('originless same-origin form navigation works but cross-site CSRF remains denied',async()=>{
+ const form=new URLSearchParams({password:env.DEMO_PASSWORD});
+ const headers={'content-type':'application/x-www-form-urlencoded',
+   'sec-fetch-site':'same-origin','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
+ const attempt=h=>req('/api/demo/login',{method:'POST',headers:h,body:form});
+ const good=await handleLogin(attempt(headers),cfg(),createLoginLimiter());
+ assert.equal(good.status,303);
+ assert.match(good.headers.get('set-cookie'),/esg_demo_session=/);
+ for(const h of [
+  {...headers,'sec-fetch-site':'cross-site'},
+  {...headers,'sec-fetch-site':'same-site'},
+  {...headers,'sec-fetch-mode':'cors'},
+  {...headers,'sec-fetch-dest':'empty'},
+  {...headers,origin:'null'},
+  {...headers,origin:'https://evil.example'},
+  {'content-type':'application/x-www-form-urlencoded'}
+ ]){
+  const response=await handleLogin(attempt(h),cfg(),createLoginLimiter());
+  assert.equal(response.status,403,JSON.stringify(h));
+  assert.equal(response.headers.has('set-cookie'),false);
+ }
+ const denied=await proxyBackend(authed('/documents',{method:'POST',headers:{
+  'sec-fetch-site':'same-origin','sec-fetch-mode':'cors','sec-fetch-dest':'empty'
+ },body:'{}'}),['documents'],cfg(),async()=>{throw Error('must not call API');});
+ assert.equal(denied.status,403);
 });
 test('proxy auth headers role upstream errors no redirects or cookies',async()=>{
  let call;const upstream=async(...args)=>{call=args;return new Response('{"detail":"Denied"}',{status:403,headers:{'content-type':'application/json','set-cookie':'upstream=bad','location':'https://secret.example'}});};
@@ -69,7 +95,7 @@ test('proxy refuses oversized downloads and hides network failures',async()=>{
 
 test('login preserves safe share return URLs and rejects open redirects',async()=>{
  const next='/?share=private-pack-token&period=2026-01';
- const gate=accessGate(req(next),cfg());assert.equal(gate.headers.get('location'),'/login?next='+encodeURIComponent(next));
+ const gate=accessGate(req(next),cfg());assert.equal(gate.headers.get('location'),origin+'/login?next='+encodeURIComponent(next));
  for(const value of [next,'/workspace?period=2026-01','//evil.example','https://evil.example','/\\evil.example','/%2f%2fevil.example','/%255cevil.example','/%broken','/\n/evil']){
   const response=await handleLogin(req('/api/demo/login',{method:'POST',headers:{origin},body:new URLSearchParams({password:env.DEMO_PASSWORD,next:value})}),cfg(),createLoginLimiter());
   assert.equal(response.headers.get('location'),value===next||value.startsWith('/workspace')?value:'/');
@@ -82,6 +108,11 @@ test('hosted mutations use trusted configured HTTPS public origin behind TLS ter
  const login=givenOrigin=>new Request('http://internal:10000/api/demo/login',{method:'POST',headers:{origin:givenOrigin},body:new URLSearchParams({password:env.DEMO_PASSWORD})});
  assert.equal((await handleLogin(login(origin),hosted,createLoginLimiter())).status,303);
  assert.equal((await handleLogin(login('https://evil.example'),hosted,createLoginLimiter())).status,403);
+ // Render routes to an internal listener; unauthenticated redirects must
+ // always point to the trusted external HTTPS website, not internal HTTP.
+ const hostedGate=accessGate(new Request('http://localhost:10000/?period=2026-01'),hosted);
+ assert.equal(hostedGate.status,303);
+ assert.equal(hostedGate.headers.get('location'),origin+'/login?next=%2F%3Fperiod%3D2026-01');
  assert.throws(()=>getDemoConfig({...env,RENDER:'true'}),/public origin|RENDER_EXTERNAL_URL/);
  for(const value of ['http://demo.example','https://user:pass@demo.example','https://demo.example/path'])assert.throws(()=>getDemoConfig({...env,DEMO_PUBLIC_ORIGIN:value}));
 });

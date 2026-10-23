@@ -57,9 +57,22 @@ export function accessGate(request,config){
  const path=new URL(request.url).pathname;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
- return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginLocation(safeReturnTo(path+new URL(request.url).search)));
+ // Next.js Proxy requires absolute Location URLs for middleware redirects.
+ // Use the trusted hosted origin instead of Render's internal HTTP listener.
+ const loginUrl=new URL(loginLocation(safeReturnTo(path+new URL(request.url).search)),config.publicOrigin||new URL(request.url).origin);
+ return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginUrl.href);
 }
-function sameOrigin(request,config){return request.headers.get('origin')===(config.publicOrigin||new URL(request.url).origin);}
+function sameOrigin(request,config){
+ const origin=request.headers.get('origin'),expected=config.publicOrigin||new URL(request.url).origin;
+ // If a request supplies an Origin, it must match. Reject foreign/null origins.
+ if(origin!==null)return origin===expected;
+ // Some same-origin browser FORM navigations omit Origin. Fetch Metadata
+ // headers are browser-controlled and reject cross-site CSRF submissions.
+ // Background fetch, same-site siblings and missing metadata remain blocked.
+ return request.headers.get('sec-fetch-site')==='same-origin' &&
+  request.headers.get('sec-fetch-mode')==='navigate' &&
+  request.headers.get('sec-fetch-dest')==='document';
+}
 // Bounded per-process throttling, including a global limit against spoofed/rotating IPs.
 export function createLoginLimiter(){
  const entries=new Map();let windowStart=0,total=0;
