@@ -1,4 +1,8 @@
-# Public offline workflow and synthetic generator dependencies.
-# Install with uv targeting an explicit project environment.
+# Application backend and offline workflow core.
+# Install with uv targeting an explicit approved project environment.
+# Next.js uses src/frontend/package.json.
+-r src/backend/requirements.txt
 -r src/ai/workflow/requirements.txt
--r src/ai/synthetic_generator/requirements.txt
+
+# Synthetic generation uses its own environment and dependency file:
+# src/ai/synthetic_generator/requirements.txt (Pillow 13 vs backend Pillow <13).

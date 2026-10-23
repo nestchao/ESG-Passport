@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+const presentation=await import('./presentation.mjs');
+const helpers = await import('./record-fields.mjs').catch(() => ({}));
+const base = {category:'water',quantity:'12.0000',unit:'m3',period_start:'2026-09-01',period_end:'2026-09-30',estimated:false};
+test('decimal strings preserve precision and zero',()=>{ assert.equal(helpers.cleanDecimal?.('123456789012345678.123400000000'),'123456789012345678.1234'); assert.equal(helpers.cleanDecimal('0.000'),'0'); assert.equal(helpers.cleanDecimal('1000'),'1000'); });
+test('categories and units match the document',()=>{assert.deepEqual(helpers.allowedCategories?.('electricity'),['electricity']);assert.deepEqual(helpers.allowedCategories('waste'),['waste_generated','waste_diverted','waste_disposed']);assert.deepEqual(helpers.allowedUnits('water'),['m3','L']);assert.equal(helpers.categoryLabel('waste_generated'),'Waste generated');assert.equal(helpers.categoryLabel('water'),'Purchased water');});
+test('normalization preserves attribution and dirty keys ignore metadata',()=>{const original={...base,source_reference:'p1',confirmed_by:'Owner'};const normalized=helpers.normaliseActivities?.([original]);assert.equal(normalized?.[0].quantity,'12');assert.equal(normalized[0].source_reference,'p1');assert.equal(helpers.activityKey([original]),helpers.activityKey([{...original,quantity:'12',confirmed_by:'Other',source_reference:'p2'}]));assert.notEqual(helpers.activityKey([base]),helpers.activityKey([{...base,estimated:true}]));});
+test('validation rejects invalid values, incompatible units, duplicates and dates',()=>{assert.deepEqual(helpers.validateActivities?.([base],'water','2026-09'),{});for(const quantity of ['', '-1','NaN','Infinity','1.1234567890123','1234567890123456789'])assert.ok(helpers.validateActivities([{...base,quantity}],'water','2026-09')['activities.0.quantity'],quantity);assert.ok(helpers.validateActivities([{...base,unit:'kg'}],'water','2026-09')['activities.0.unit']);assert.ok(helpers.validateActivities([base,base],'water','2026-09')['activities.1.category']);assert.ok(helpers.validateActivities([{...base,period_end:'2026-08-30'}],'water','2026-09')['activities.0.period_end']);});
+test('cross month allocation must be explicit and documented',()=>{const row={...base,period_start:'2026-08-10'};const errors=helpers.validateActivities?.([row],'water','2026-09');for(const field of ['estimated','assumptions','allocated_period'])assert.ok(errors?.[`activities.0.${field}`]);assert.deepEqual(helpers.validateActivities([{...row,estimated:true,assumptions:'Days in September',allocated_period:'2026-09'}],'water','2026-09'),{});assert.ok(helpers.validateActivities([{...base,period_start:'2026-08-01',period_end:'2026-08-31'}],'water','2026-09')['activities.0.period_start']);});
+import {readFileSync,existsSync} from 'node:fs';
+import {createRequire} from 'node:module';
+const testRequire=createRequire(process.env.RECORD_TEST_ROOT || import.meta.url);
+const {createElement}=testRequire('react');
+const {renderToStaticMarkup}=testRequire('react-dom/server');
+const ts=testRequire('typescript');
+function loadComponent(file,name) {
+ assert.ok(existsSync(new URL(file,import.meta.url)),`${file} exists`);
+ const compiled=ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
+ const module={exports:{}}; const require=testRequire;
+ new Function('require','module','exports',compiled)(id=>id==='./record-fields.mjs'?helpers:id==='./presentation.mjs'?presentation:require(id),module,module.exports);
+ return module.exports[name];
+}
+test('record form shows readable scoped options and accessible errors',()=>{const Component=loadComponent('./record-fields-form.tsx','RecordFields');const html=renderToStaticMarkup(createElement(Component,{documentType:'water',rows:[base],onChange(){},disabled:false,errors:{'activities.0.quantity':'Enter a quantity'}}));assert.match(html,/Purchased water/);assert.match(html,/m³/);assert.match(html,/aria-invalid="true"/);assert.match(html,/aria-describedby=/);assert.match(html,/data-field="activities.0.quantity"/);assert.ok(!html.includes('Add quantity'));assert.ok(!html.includes('Waste disposed'));});
+test('overview advances based on documents and names the pending record type',()=>{const Overview=loadComponent('./desktop-overview.tsx','DesktopOverview');const props={readiness:{complete:0},breakdown:{},requests:[],gaps:[],periodLabel:'September 2026',titles:{}};for(const [documents,label] of [[[],'Add records'],[[{type:'water',confirmed:false}],'Check data'],[[{type:'water',confirmed:true}],'Updated profile']]){const html=renderToStaticMarkup(createElement(Overview,{...props,documents}));assert.ok(html.includes(`aria-current="step" class="current"><span>${label==='Add records'?1:label==='Check data'?2:3}</span>${label}`));if(!documents.length){assert.match(html,/Add your first records/);assert.ok(!html.includes('Monthly records reviewed'));}if(documents[0]?.confirmed===false)assert.match(html,/Purchased water record \/ pending records/);}});
+
+
+test('validation enforces valid allocation month and strict estimated flag',()=>{assert.ok(helpers.validateActivities([{...base,allocated_period:''}],'water','2026-09')['activities.0.allocated_period']);assert.ok(helpers.validateActivities([{...base,estimated:'false'}],'water','2026-09')['activities.0.estimated']);assert.ok(helpers.validateActivities([{...base,period_start:'2026-09-31'}],'water','2026-09')['activities.0.period_start']);for(const quantity of ['0','1e3','0.000000000001','999999999999999999.999999999999'])assert.deepEqual(helpers.validateActivities([{...base,quantity}],'water','2026-09'),{},quantity);});
+

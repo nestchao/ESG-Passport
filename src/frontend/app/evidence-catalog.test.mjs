@@ -1,0 +1,4 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {hydrateEvidence} from './evidence-catalog.mjs';
+test('reference catalog retains other-month and archived attachments without changing record list',async()=>{const docs=[{id:'one',period:'2026-12'}],calls=[];const result=await hydrateEvidence(async path=>{calls.push(path);return{id:'old',period:'2026-09',archived:true};},docs,['old','old']);assert.equal(result.length,2);assert.equal(result[1].archived,true);assert.deepEqual(calls,['/documents/old']);assert.equal(docs.length,1);});
+test('missing selected files stay visible for removal; connection failures propagate',async()=>{const result=await hydrateEvidence(async()=>{throw Object.assign(Error('missing'),{status:404})},[],['gone']);assert.equal(result[0].unavailable,true);await assert.rejects(hydrateEvidence(async()=>{throw Error('offline')},[],['file']),/offline/);});
