@@ -1,0 +1,87 @@
+{
+  "1e990e0dc20d61da66ad52ce2236c76be790cdb698a5f7cc7c396dba17ca5faf": {
+    "supplier_name": "TENAGA DEMO MERANTI",
+    "document_date": "2026-06-02",
+    "period_start": "2026-05-01",
+    "period_end": "2026-05-31",
+    "activities": [
+      {
+        "category": "electricity",
+        "quantity": "2577",
+        "unit": "kWh",
+        "period_start": "2026-05-01",
+        "period_end": "2026-05-31",
+        "estimated": false,
+        "assumptions": "",
+        "allocated_period": null,
+        "source_reference": "Fictional sample text, page 1: 2,577 kWh"
+      }
+    ],
+    "waste_transfer_candidate": null,
+    "waste_category_suggestion": null,
+    "uncertainty_notes": [
+      "OCR candidates are unverified. Check the original document before confirming.",
+      "This demo extraction is precomputed from the fictional test document, not a new OCR scan. Review source details manually."
+    ],
+    "ocr_status": "precomputed_synthetic_fixture",
+    "ocr_engine": "synthetic_fixture_text_not_live_ocr"
+  },
+  "1acd7151a058030695492421cb8b2a1fc7e7d7740a3d3de01572c0b05dbd0d97": {
+    "supplier_name": "AIR DEMO KENCANA",
+    "document_date": null,
+    "period_start": "2026-03-01",
+    "period_end": "2026-03-31",
+    "activities": [
+      {
+        "category": "water",
+        "quantity": "807",
+        "unit": "m3",
+        "period_start": "2026-03-01",
+        "period_end": "2026-03-31",
+        "estimated": false,
+        "assumptions": "",
+        "allocated_period": null,
+        "source_reference": "Fictional sample text, page 1: 807 m3"
+      }
+    ],
+    "waste_transfer_candidate": null,
+    "waste_category_suggestion": null,
+    "uncertainty_notes": [
+      "OCR candidates are unverified. Check the original document before confirming.",
+      "This demo extraction is precomputed from the fictional test document, not a new OCR scan. Review source details manually."
+    ],
+    "ocr_status": "precomputed_synthetic_fixture",
+    "ocr_engine": "synthetic_fixture_text_not_live_ocr"
+  },
+  "c4bc11002caa2ed8ed82317e6214020c54209d776295f8ac26ee21df916e3b0a": {
+    "supplier_name": "PUSAT TIMBANG DEMO MERANTI",
+    "document_date": "2026-03-29",
+    "period_start": "2026-03-29",
+    "period_end": "2026-03-29",
+    "activities": [],
+    "waste_transfer_candidate": {
+      "quantity": "4850",
+      "unit": "kg",
+      "period_start": "2026-03-29",
+      "period_end": "2026-03-29",
+      "source_reference": "Fictional sample text, page 1, NET / BERAT BERSIH: 4,850 kg"
+    },
+    "waste_category_suggestion": {
+      "category": "waste_diverted",
+      "confidence": "low",
+      "status": "unverified_suggestion",
+      "basis": "declared_destination_only",
+      "source_text": "Tujuan: RECYCLING",
+      "reason": "The ticket declares a recycling/recovery destination, but does not prove completed diversion."
+    },
+    "uncertainty_notes": [
+      "OCR candidates are unverified. Check the original document before confirming.",
+      "Detected net transfer weight 4850 kg. You must choose a supported ESG waste category after checking additional evidence.",
+      "Suggested category is based only on the declared route and is NOT verified. Review supporting evidence before applying or confirming it.",
+      "Transfer weights and declared destinations do not prove waste generated, diverted, or disposed; select a category only with supporting evidence.",
+      "This demo extraction is precomputed from the fictional test document, not a new OCR scan. Review source details manually."
+    ],
+    "ocr_status": "precomputed_synthetic_fixture",
+    "ocr_engine": "synthetic_fixture_text_not_live_ocr"
+  }
+}

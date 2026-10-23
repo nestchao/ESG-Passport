@@ -315,7 +315,7 @@ class Workspace:
             raise
         return {'deleted': True, 'id': document_id, 'period': period}
 
-    def upload(self, filename, category, content, mime_type, period='2026-09'):
+    def upload(self, filename, category, content, mime_type, period='2026-09', *, precomputed_extraction=None):
         self.period(period)
         company = self.company(lock=True)
         if category not in ('electricity', 'diesel', 'petrol', 'water', 'waste'):
@@ -335,9 +335,14 @@ class Workspace:
             self.storage.upload(path, content, mime)
             # The existing /documents upload now pre-fills the existing editor.
             # OCR is never considered confirmed evidence or a calculation input.
-            from .bill_ocr import extract_upload
             from copy import deepcopy
-            extracted = extract_upload(content, mime, category, period)
+            if precomputed_extraction is None:
+                from .bill_ocr import extract_upload
+                extracted = extract_upload(content, mime, category, period)
+            else:
+                # Public synthetic fixtures use precomputed values to avoid
+                # loading ONNX OCR models on Render's small free instance.
+                extracted = deepcopy(precomputed_extraction)
             doc.extraction = extracted
             doc.original_extraction = deepcopy(extracted)
             self.db.add(doc)
