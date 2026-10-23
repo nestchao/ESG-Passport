@@ -73,26 +73,32 @@ References: https://render.com/docs/blueprint-spec and https://render.com/docs/d
 
 Render automatically provides the frontend RENDER_EXTERNAL_URL used to check login/save origins behind HTTPS termination. If you later use a custom domain, set frontend DEMO_PUBLIC_ORIGIN to that exact HTTPS origin and redeploy. Leave it unset for the normal Render address. Changing DEMO_SESSION_SECRET invalidates existing demo sessions.
 
-### Public synthetic demo and protected workspace
+### Protected homepage with Supabase + Gemini OCR
 
-The frontend now has an anonymous `/demo` route using **only** three bundled
-synthetic fixtures (electricity, water and waste). Anonymous requests for `/`
-without query parameters redirect to `/demo`; customer share links, the real
-workspace and **all** backend API routes remain session-protected. The login
-form includes a link to the public sandbox, while staff use `/login` with the
-existing `DEMO_PASSWORD`. Do not unset or weaken the demo access configuration
-or connect the public demo to Supabase. Its review and sharing steps are only
-local browser simulations; they cannot approve or expose customer data.
+Visitors to `/` are redirected to `/login` until they have a valid staff
+session. After login, the original ESG Passport UI runs at `/` (or at the
+optional `/live` alias) against the real Supabase PostgreSQL and private
+Supabase Storage via the authenticated Next.js API proxy.
 
-### Anonymous full workspace using synthetic-only storage
+The backend calls Gemini for protected uploads only when `ESG_OCR_MODE` and
+the corresponding provider API credentials are correctly configured on the
+**backend** Render service. `gemini_grafilab_fallback` can try Grafilab if
+Gemini fails, then use offline OCR; therefore an apparently successful upload
+does **not** prove Gemini was called. Check the document review's OCR engine
+and model metadata before claiming real Gemini success.
 
-Set shared Blueprint `PUBLIC_WORKSPACE_ENABLED=true` for both services (included
-in `render.yaml`). Visitors at `/` now open the **full existing ESG Passport
-interface** without credentials. All anonymous API traffic is forwarded to
-`/sandbox` on the FastAPI service, which uses a separate in-memory SQLite
-database and synthetic test-image storage; it never uses the real Supabase
-engine/storage. Anonymous uploads are restricted to three SHA-256-verified fictional PNG fixtures and a matching month/category; all other files are rejected. The shared sandbox is
-volatile (restart clears changes) and communal (don't enter confidential
-information). The real database, administrative APIs, private share links
-and optional protected staff login remain session-gated. The backend
-server-to-server shared key and `DEMO_PASSWORD` must remain configured.
+### Password-free fictional demonstration
+
+`/demo` remains accessible without login, using three bundled synthetic
+sample documents entirely within the browser. It does not contact Supabase,
+Gemini or Grafilab. `/ocr` is a separate browser OCR scanner and does not
+write to Supabase either.
+
+The old anonymous full SQLite workspace is no longer accessible through the
+frontend. New Blueprint settings use `PUBLIC_WORKSPACE_ENABLED=false`; even
+when an older existing service still has it set to true, the frontend rejects
+all anonymous `/api/backend/*` calls and never routes them to `/sandbox`.
+
+Keep `DEMO_ACCESS_ENABLED=true`, the shared backend server key and the
+strong demo password. This hackathon prototype uses simulated staff roles,
+not production-grade authentication; never share the staff password broadly.

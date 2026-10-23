@@ -31,7 +31,7 @@ test('synthetic public demo and only its selected images open without session',(
  for(const filename of allowed)assert.equal(accessGate(req(`/demo-assets/${filename}.png`),c),null);
  const homepage=accessGate(req('/'),c);
  assert.equal(homepage.status,303);
- assert.equal(homepage.headers.get('location'),origin+'/demo');
+ assert.equal(homepage.headers.get('location'),origin+'/login');
  assert.equal(accessGate(req('/?share=secret'),c).headers.get('location'),origin+'/login?next=%2F%3Fshare%3Dsecret');
  for(const path of ['/demo/admin','/demo/../profile','/demo-assets/missing.png','/demo-assets/private.txt']){
   const result=accessGate(req(path),c);
@@ -46,7 +46,7 @@ test('synthetic public demo and only its selected images open without session',(
 });
 test('protected /live site uses real backend only after valid staff sign-in',async()=>{
  const sandbox=getDemoConfig({...env,PUBLIC_WORKSPACE_ENABLED:'true'});
- assert.equal(accessGate(req('/'),sandbox),null);
+ assert.equal(accessGate(req('/'),sandbox).headers.get('location'),origin+'/login');
  const anonymous=accessGate(req('/live'),sandbox);
  assert.equal(anonymous.status,303);
  assert.equal(anonymous.headers.get('location'),origin+'/login?next=%2Flive');
@@ -60,40 +60,38 @@ test('protected /live site uses real backend only after valid staff sign-in',asy
  assert.equal(response.status,200);
  assert.equal(target,'https://backend.example/profile');
  assert.equal((await response.json()).source,'supabase-backend');
- assert.equal((await proxyBackend(req('/api/backend/profile'),['profile'],sandbox,async(url)=>{
-  assert.equal(url,'https://backend.example/sandbox/profile');
-  return Response.json({source:'synthetic'});
- })).status,200);
+ assert.equal((await proxyBackend(req('/api/backend/profile'),['profile'],sandbox,
+  async()=>{throw Error('Anonymous request reached backend');})).status,401);
 });
 
-test('password-free full ESG workspace is routed only to synthetic backend',async()=>{
+test('protected homepage uses Supabase backend with signed session only',async()=>{
  const sandbox=getDemoConfig({...env,PUBLIC_WORKSPACE_ENABLED:'true'});
  assert.equal(sandbox.publicWorkspaceEnabled,true);
- assert.equal(accessGate(req('/'),sandbox),null);
- assert.equal(accessGate(req('/?period=2026-09'),sandbox),null);
- assert.equal(accessGate(req('/api/backend/profile'),sandbox),null);
- assert.equal(accessGate(req('/api/backend/documents',{method:'POST',headers:{origin}}),sandbox),null);
- assert.equal(accessGate(req('/demo'),sandbox).headers.get('location'),origin+'/');
- assert.equal(accessGate(req('/private'),sandbox).headers.get('location'),origin+'/login?next=%2Fprivate');
- let upstreamTarget='';
- const mock=async(target,options)=>{upstreamTarget=target;assert.equal(options.headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);assert.equal(options.headers.has('cookie'),false);return Response.json({synthetic:true})};
- const anonymous=req('/api/backend/profile?period=2026-09',{headers:{'X-Demo-Role':'owner'}});
- const result=await proxyBackend(anonymous,['profile'],sandbox,mock);
- assert.equal(result.status,200);
- assert.equal(upstreamTarget,'https://backend.example/sandbox/profile?period=2026-09');
- let targetUrl='';
- const upload=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin,'content-type':'multipart/form-data; boundary=demo'},body:'synthetic'}),['documents'],sandbox,async target=>{targetUrl=target;return Response.json({synthetic:true},{status:201});});
- assert.equal(upload.status,201);
- assert.equal(targetUrl,'https://backend.example/sandbox/documents');
- const oversize=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin,'content-type':'multipart/form-data'},body:new Uint8Array(600*1024)}),['documents'],sandbox,()=>{throw Error('oversize should not be sent')});
- assert.equal(oversize.status,413);
- const crossSite=await proxyBackend(req('/api/backend/declarations/G2.1',{method:'PUT',headers:{origin:'https://evil.example'},body:'{}'}),['declarations','G2.1'],sandbox,()=>{throw Error('must not reach backend')});
- assert.equal(crossSite.status,403);
- const real=await proxyBackend(authed('/profile'),['profile'],sandbox,mock);
- assert.equal(real.status,200);
- assert.equal(upstreamTarget,'https://backend.example/profile');
+ assert.equal(accessGate(req('/'),sandbox).headers.get('location'),origin+'/login');
+ assert.equal(accessGate(req('/?period=2026-09'),sandbox).headers.get('location'),origin+'/login?next=%2F%3Fperiod%3D2026-09');
+ assert.equal(accessGate(req('/demo'),sandbox),null);
+ for(const path of ['/api/backend/profile','/api/backend/documents','/api/backend/shares/private']){
+   assert.equal(accessGate(req(path),sandbox).status,401);
+   assert.equal((await proxyBackend(req(path),[...path.replace('/api/backend/','').split('/')],sandbox,
+    async()=>{throw Error('Anonymous request escaped authorization');})).status,401);
+ }
+ const mock=async(target,options)=>{
+  assert.equal(target,'https://backend.example/profile?period=2026-09');
+  assert.equal(options.headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);
+  assert.equal(options.headers.has('cookie'),false);
+  return Response.json({source:'supabase-backend'});
+ };
+ assert.equal(accessGate(req('/',{headers:{cookie:cookie()}}),sandbox),null);
+ const authedProfile=await proxyBackend(authed('/profile?period=2026-09'),['profile'],sandbox,mock);
+ assert.equal(authedProfile.status,200);
+ assert.equal((await authedProfile.json()).source,'supabase-backend');
+ const blockedWrite=await proxyBackend(authed('/documents',{method:'POST',headers:{
+  origin:'https://evil.example','content-type':'application/json'
+ },body:'{}'}),['documents'],sandbox,async()=>{throw Error('Cross-origin request escaped protection');});
+ assert.equal(blockedWrite.status,403);
  assert.equal(accessGate(req('/api/demo/logout'),sandbox),null);
 });
+
 test('login throttling logout and origin checks',async()=>{
  const limiter=createLoginLimiter();const login=password=>req('/api/demo/login?next=https://evil.example',{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password})});
  const bad=await handleLogin(login('wrong'),cfg(),limiter);assert.equal(bad.status,303);assert.equal(bad.headers.get('location'),'/login?error=1');assert.equal(bad.headers.has('set-cookie'),false);
