@@ -74,3 +74,22 @@ main{padding:32px 32px 24px;max-width:1320px}.page-heading{margin-bottom:24px;al
 .answer-preview .answer-unavailable{color:#65766c;font-size:15px}.answer-text-preview{padding:18px 20px}.answer-text-preview>p{white-space:pre-line;overflow-wrap:anywhere}
 .answer-owner-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}.answer-owner-footer .answer-attribution{font-size:12px;color:#65766c}
 @media(max-width:650px){.answer-preview-heading,.answer-metric{padding:14px}.answer-preview-heading{align-items:flex-start}.answer-metric-heading{align-items:flex-start}.answer-period{font-size:11px}.answer-preview p.answer-value{font-size:23px}.answer-metric-heading h5>span{display:block;margin:4px 0 0}}
+
+/* Header workspace role switcher. */
+.workspace-role-switcher{position:relative;flex-shrink:0}
+.workspace-role-trigger{display:flex;align-items:center;gap:10px;min-height:44px;min-width:148px;padding:7px 10px;border:1px solid #d6e4dc;border-radius:9px;background:#fff;text-align:left;transition:background .15s,border-color .15s}
+.workspace-role-trigger:hover,.workspace-role-trigger.is-open{background:#f1f7f3;border-color:#98b9a8}
+.workspace-role-avatar{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#eaf3ed;color:#17634e;flex-shrink:0}
+.workspace-role-current{display:flex;flex-direction:column;gap:1px;flex:1;line-height:1.3}
+.workspace-role-current small{font-size:10px;color:#65766c;font-weight:400}.workspace-role-current strong{font-size:13px;color:#173c32;font-weight:600}
+.workspace-role-chevron{color:#526b5f;transition:transform .15s}.is-open .workspace-role-chevron{transform:rotate(180deg)}
+.workspace-role-menu{position:absolute;right:0;top:calc(100% + 9px);width:310px;max-width:calc(100vw - 24px);padding:7px;background:#fff;border:1px solid #dce7e0;border-radius:12px;box-shadow:0 12px 34px #123a2b1a,0 2px 6px #123a2b0a;z-index:60}
+.workspace-role-menu-heading{padding:8px 10px 10px;color:#65766c;font-size:11px;font-weight:600;letter-spacing:.2px}
+.workspace-role-option{width:100%;min-height:68px;display:flex;align-items:center;gap:11px;padding:11px 10px;border-radius:7px;text-align:left}
+.workspace-role-option:hover,.workspace-role-option:focus-visible{background:#f1f6f3}.workspace-role-option.is-selected{background:#eaf4ee}
+.workspace-role-option:focus-visible{outline:2px solid #16846c;outline-offset:-2px}
+.workspace-role-option-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:8px;background:#f0f4f1;color:#526b5f}.is-selected .workspace-role-option-icon{background:#d8ecdf;color:#17634e}
+.workspace-role-option-copy{flex:1;min-width:0}.workspace-role-option-copy strong{display:block;font-size:13px;color:#173c32;font-weight:600}.workspace-role-option-copy small{display:block;font-size:11px;line-height:1.5;color:#65766c;margin-top:3px}.workspace-role-check{flex-shrink:0;color:#17634e}
+@media(max-width:650px){.workspace-role-trigger{min-width:105px;gap:7px;padding:7px}.workspace-role-current small{display:none}.workspace-role-current strong{font-size:12px}.workspace-role-avatar{width:26px;height:26px}.workspace-role-menu{width:290px}}
+@media(prefers-reduced-motion:reduce){.workspace-role-trigger,.workspace-role-chevron{transition:none}}
+@media print{.workspace-role-switcher{display:none!important}}

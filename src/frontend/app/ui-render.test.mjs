@@ -14,13 +14,14 @@ function component(file, name) {
   const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
   const module={exports:{}};
   const require=createRequire(import.meta.url);
-  const resolve=id=>id==='./draft-answer'?{DraftAnswer}:id==='./desktop-overview'?{DesktopOverview}:id==='./declaration-summary'?{DeclarationSummary}:require(id);
+  const resolve=id=>id==='./role-switcher'?{RoleSwitcher}:id==='./draft-answer'?{DraftAnswer}:id==='./desktop-overview'?{DesktopOverview}:id==='./declaration-summary'?{DeclarationSummary}:require(id);
   new Function('require','module','exports',compiled)(resolve,module,module.exports);
   return module.exports[name];
 }
 const DeclarationSummary=component('./declaration-summary.tsx','DeclarationSummary');
 const DesktopOverview=component('./desktop-overview.tsx','DesktopOverview');
 const DraftAnswer=component('./draft-answer.tsx','DraftAnswer');
+const RoleSwitcher=component('./role-switcher.tsx','RoleSwitcher');
 
 test('declaration UI renders policy rows with labels rather than JSON',()=>{
   const html=renderToStaticMarkup(createElement(DeclarationSummary,{code:'G2.1',value:{policies:[{name:'Conduct',status:'in place'},{name:'Safety',status:'unknown'},{name:'Reporting',status:'not in place'}]}}));
@@ -87,4 +88,18 @@ test('numeric answer display rounds for readability while retaining precise valu
  const html=renderToStaticMarkup(createElement(DraftAnswer,{question:{reviewed:true,metrics:[{code:'E2.1',title:'Energy',badge:'estimated',value:'597.84579230080572',unit:'kWh'}]},period:'2026-12'}));
  assert.ok(html.includes('title="597.84579230080572 kWh"'));
  assert.ok(html.includes('>597.846<span>kWh</span>'));
+});
+
+
+test('workspace role selector exposes a labelled menu button and current role for every identity',()=>{
+ for(const [value,label] of [['owner','Owner'],['clerk','Admin clerk'],['customer','Customer']]){
+  const html=renderToStaticMarkup(createElement(RoleSwitcher,{value,onChange(){},disabled:false}));
+  assert.ok(html.includes(`aria-label="Workspace role: ${label}"`));
+  assert.ok(html.includes('aria-haspopup="menu"'));assert.ok(html.includes('aria-expanded="false"'));
+  assert.ok(html.includes(label));assert.ok(!html.includes('<select'));
+ }
+});
+test('workspace role selector prevents switching during a backend operation',()=>{
+ const html=renderToStaticMarkup(createElement(RoleSwitcher,{value:'owner',onChange(){},disabled:true}));
+ assert.match(html,/<button[^>]*disabled=""/);
 });
