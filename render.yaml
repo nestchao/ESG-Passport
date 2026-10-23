@@ -5,6 +5,8 @@ envVarGroups:
     envVars:
       - key: DEMO_ACCESS_ENABLED
         value: "true"
+      - key: PUBLIC_WORKSPACE_ENABLED
+        value: "true"
       - key: BACKEND_SHARED_KEY
         generateValue: true
 
