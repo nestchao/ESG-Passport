@@ -57,7 +57,10 @@ export function accessGate(request,config){
  const path=new URL(request.url).pathname;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
- return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginLocation(safeReturnTo(path+new URL(request.url).search)));
+ // Next.js Proxy requires absolute Location URLs for middleware redirects.
+ // Use the trusted hosted origin instead of Render's internal HTTP listener.
+ const loginUrl=new URL(loginLocation(safeReturnTo(path+new URL(request.url).search)),config.publicOrigin||new URL(request.url).origin);
+ return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginUrl.href);
 }
 function sameOrigin(request,config){return request.headers.get('origin')===(config.publicOrigin||new URL(request.url).origin);}
 // Bounded per-process throttling, including a global limit against spoofed/rotating IPs.
