@@ -161,3 +161,55 @@ def test_month_mismatch_must_be_corrected_before_confirmation(workspace):
     metric = next(m for m in get(client,'/profile?period=2026-05')['metrics'] if m['code']=='E1.2')
     assert saved['id'] in metric['evidence_ids']
     assert metric['value']=='1906.98'
+
+
+def test_retry_ocr_preserves_saved_data_and_initial_extraction(workspace, monkeypatch):
+    client, sessions, *_ = workspace
+    upload = client.post('/documents', headers=CLERK,
+        data={'type': 'electricity', 'period': '2026-09'},
+        files={'file': ('retry-bill.png', bill('PNG'), 'image/png')})
+    assert upload.status_code == 201, upload.text
+    initial = upload.json()
+    from esg_backend.models import Document
+    with sessions() as session:
+        record = session.get(Document, initial['id'])
+        first = record.original_extraction
+        record.extraction = {'ocr_status': 'unavailable', 'activities': [], 'uncertainty_notes': ['Old failure']}
+        session.commit()
+    expected = {
+        'ocr_status': 'candidate_found', 'ocr_engine': 'test fake',
+        'activities': [{
+            'category': 'electricity', 'quantity': '1234', 'unit': 'kWh',
+            'period_start': '2026-09-01', 'period_end': '2026-09-30',
+            'estimated': False, 'assumptions': '', 'allocated_period': None,
+            'source_reference': 'Original page 1'
+        }], 'uncertainty_notes': ['Please review']
+    }
+    monkeypatch.setattr('esg_backend.bill_ocr.extract_upload', lambda *args: expected)
+    response = client.post(f"/documents/{initial['id']}/ocr/retry",
+        headers=CLERK, json={'expected_version': initial['version']})
+    assert response.status_code == 200, response.text
+    refreshed = response.json()
+    assert refreshed['version'] == initial['version'] + 1
+    assert refreshed['extraction'] == expected
+    assert refreshed['original_extraction'] == first
+    assert refreshed['confirmed'] is False
+    assert refreshed['activities'] == []
+    stale = client.post(f"/documents/{initial['id']}/ocr/retry",
+        headers=CLERK, json={'expected_version': initial['version']})
+    assert stale.status_code == 409
+
+
+def test_retry_ocr_does_not_allow_confirmed_record(workspace):
+    client, *_ = workspace
+    upload = client.post('/documents', headers=CLERK,
+        data={'type': 'electricity', 'period': '2026-09'},
+        files={'file': ('confirmed-retry.png', bill('PNG'), 'image/png')})
+    initial = upload.json()
+    confirmed = client.put(f"/documents/{initial['id']}/activities", headers=CLERK,
+        json={'activities': initial['extraction']['activities'],
+              'confirmed': True, 'expected_version': initial['version']})
+    assert confirmed.status_code == 200, confirmed.text
+    retry = client.post(f"/documents/{initial['id']}/ocr/retry", headers=CLERK,
+        json={'expected_version': confirmed.json()['version']})
+    assert retry.status_code == 409
