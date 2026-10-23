@@ -44,3 +44,9 @@ test('same-origin proxy requests include session credentials',async()=>{
  let options;const api=createApiClient({baseUrl:'/api/backend',fetchImpl:async(_url,opts)=>{options=opts;return json({ok:true});}});
  await api.request('/profile');assert.equal(options.credentials,'same-origin');
 });
+test('PR9 approval gap challenge remains structured for the existing owner-review form',async()=>{
+ const pr9_review={hash:'b'.repeat(64),items:[{id:'q::r1::value_not_available',code:'E3.1',issue:'value_not_available'}]};
+ const api=createApiClient({fetchImpl:async()=>json({detail:{message:'Review and acknowledge each gap',pr9_review}},409)});
+ await assert.rejects(api.request('/questionnaires/q/approve-share',{method:'POST',body:'{}'},'owner'),
+  error=>error.status===409&&error.approvalReview?.hash===pr9_review.hash&&error.approvalReview.items[0].id===pr9_review.items[0].id);
+});

@@ -7,7 +7,7 @@ Evidence-backed monthly ESG profiles and owner-approved customer questionnaire p
 - **Frontend:** Next.js and Tailwind in `src/frontend`.
 - **Backend:** FastAPI in `src/backend`.
 - **Persistence:** Supabase Postgres and private Supabase Storage.
-- **Current scope:** one fictional company, September 2026, simulated roles, manual bill review and wording-based question suggestions. No live AI or production authentication.
+- **Current scope:** one fictional company, September 2026, simulated roles, offline OCR-assisted bill review and reviewed bilingual SEDG question mapping. No external LLM or production user accounts.
 
 The frontend now calls the API. It does not fall back to browser fixtures when the API is unavailable. Earlier browser-local records remain untouched and are not imported.
 

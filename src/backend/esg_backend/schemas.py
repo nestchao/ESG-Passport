@@ -71,6 +71,9 @@ class ApprovalInput(Input):
     version: int = Field(ge=1)
     recipient: str = Field(min_length=1, max_length=255)
     selected_evidence_ids: list[str] = Field(default_factory=list, max_length=100)
+    pr9_review_hash: str | None = Field(default=None, max_length=64)
+    acknowledged_issues: list[str] = Field(default_factory=list, max_length=500)
+    pr9_review_reason: str = Field(default='', max_length=1500)
 
 
 class RecalculateInput(Input):

@@ -5,6 +5,8 @@ from decimal import Decimal, InvalidOperation
 import json
 import re
 
+from .ai_calculation import normalize_existing_quantity, factor_unit_compatible
+
 TITLES = {'E1.1':'Direct emissions','E1.2':'Electricity emissions','E2.1':'Energy consumption','E3.1':'Water withdrawn','E4.1':'Waste management','S1.1':'Labour incidents','S4.1':'Health & safety','G1.1':'Company directors','G2.1':'Policies in place','G3.1':'Financial reporting','G4.1':'Corruption incidents'}
 CODES = list(TITLES)
 POLICIES = ('Code of Conduct','Anti-Corruption Policy','Whistleblowing Policy','Health and Safety Policy')
@@ -91,8 +93,8 @@ def calculate_profile(company, documents, declarations, factors, period):
             quantity=_number(a.get('quantity'))
             allowed={'electricity':('kWh',),'diesel':('L',),'petrol':('L',),'water':('L','m3','m³'),'waste_generated':('kg','t'),'waste_diverted':('kg','t'),'waste_disposed':('kg','t')}
             if a.get('unit') not in allowed[category]: raise ValueError('Unsupported activity unit.')
-            if category=='water' and a['unit'] in ('m3','m³'): quantity*=Decimal(1000)
-            if category.startswith('waste_') and a['unit']=='kg': quantity/=Decimal(1000)
+            if category == 'water' or category.startswith('waste_'):
+                quantity = normalize_existing_quantity(category, quantity, a['unit'])
             group['rows'].append((quantity,a,document))
             group['estimated'] |= bool(a.get('estimated') or crosses or allocated)
     for group in groups.values():
@@ -105,7 +107,8 @@ def calculate_profile(company, documents, declarations, factors, period):
         required=used if required is None else required
         missing=any(groups[c]['missing'] for c in required) or any(c.get('value') is None for c in components)
         selected=[factor_map[k] for k in factor_keys if k in factor_map]
-        missing |= len(selected)!=len(factor_keys)
+        missing |= len(selected)!=len(factor_keys) or any(
+            not factor_unit_compatible(key, factor_map.get(key)) for key in factor_keys)
         value=None if missing else sum((c['value'] for c in components),Decimal(0))
         if code=='E4.1': value=None if missing else components[0]['value']
         estimated=proxy or any(g['estimated'] for g in used_groups) or any(f.get('estimated') for f in selected)
@@ -117,7 +120,8 @@ def calculate_profile(company, documents, declarations, factors, period):
     def component(category, name, unit, factor=None):
         group=groups[category]; value=group['value']
         if factor:
-            value=value*_number(factor_map[factor]['value']) if value is not None and factor in factor_map else None
+            value=value*_number(factor_map[factor]['value']) if (
+                value is not None and factor_unit_compatible(factor, factor_map.get(factor))) else None
         return dict(name=name,category=category,value=value,unit=unit,evidence_ids=_unique(group['evidence']),pending=group['pending'])
 
     fuels=[c for c in ('diesel','petrol') if groups[c]['encountered']]

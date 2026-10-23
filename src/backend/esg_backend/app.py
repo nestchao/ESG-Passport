@@ -96,7 +96,8 @@ def create_app(*, settings=None, session_factory=None, storage=None):
         try:
             with session_factory() as db:
                 db.execute(text('SELECT 1'))
-            return {'status': 'ok', 'synthetic_only': True, 'ai_enabled': False}
+            return {'status': 'ok', 'synthetic_only': True, 'ai_enabled': True,
+                    'ai_mode': 'offline_deterministic', 'ocr_enabled': True}
         except SQLAlchemyError:
             return JSONResponse(status_code=503, content={'status': 'unavailable', 'detail': 'Cannot connect to Supabase Postgres.'})
 

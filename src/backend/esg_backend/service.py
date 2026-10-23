@@ -2,6 +2,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import hashlib
+import json
 from io import BytesIO
 from pathlib import PurePosixPath
 import re
@@ -138,7 +139,26 @@ class Workspace:
         return results
 
     def serialize_document(self, doc, include_path=False):
-        return self.serialize_documents([doc], include_path=include_path)[0]
+        result = self.serialize_documents([doc], include_path=include_path)[0]
+        extraction = result.get('extraction') or {}
+        # An earlier OCR parser could have failed even when OCR recognised the
+        # bill. Re-evaluate the original only when opening an unconfirmed,
+        # activity-free record with a failed extraction. This is a read-only
+        # candidate: do not mutate the original record, upload, or confirmation.
+        if (not doc.confirmed and not result.get('activities') and not doc.archived_at
+                and extraction.get('ocr_status') in ('manual_entry_required', 'unavailable')):
+            try:
+                from .bill_ocr import extract_upload
+                content = self.storage.download(doc.object_path)
+                recovered = extract_upload(content, doc.mime_type, doc.type, doc.period)
+                if recovered.get('activities'):
+                    recovered['uncertainty_notes'].append(
+                        'OCR retried for an existing record. Correct and confirm the values; the original extraction is retained.')
+                    result['extraction'] = recovered
+            except Exception:
+                # Recovery must never prevent viewing the uploaded source.
+                pass
+        return result
 
     def documents(self, period='2026-09', *, archived=False, include_history=True):
         self.period(period)
@@ -249,6 +269,13 @@ class Workspace:
                        mime_type=mime, file_hash=digest, object_path=path, uploaded_by=self.actor)
         try:
             self.storage.upload(path, content, mime)
+            # The existing /documents upload now pre-fills the existing editor.
+            # OCR is never considered confirmed evidence or a calculation input.
+            from .bill_ocr import extract_upload
+            from copy import deepcopy
+            extracted = extract_upload(content, mime, category, period)
+            doc.extraction = extracted
+            doc.original_extraction = deepcopy(extracted)
             self.db.add(doc)
             self.db.flush()
             self.invalidate([period])
@@ -348,7 +375,40 @@ class Workspace:
         if questions is None:
             questions = self.db.scalars(select(Question).where(
                 Question.questionnaire_id == request.id).order_by(Question.position))
-        return {**row(request), 'questions': [safe(answer_question(row(q), profile)) for q in questions]}
+        question_rows = [row(q) for q in questions]
+        # Integrate offline evidence-readiness checks into the EXISTING question
+        # response. Do not persist warnings or change calculated answers/reviews.
+        needs_evidence = any(q['reviewed'] and not q.get('manual_answer') and
+                             set(q.get('codes') or ()).intersection(
+                                 {'E1.1', 'E1.2', 'E2.1', 'E3.1', 'E4.1'}) for q in question_rows)
+        observations = []
+        if needs_evidence:
+            from .ai_evidence import normalize_confirmed_activities
+            documents = self.documents(request.period, include_history=False)
+            document_ids = [d['id'] for d in documents]
+            if document_ids:
+                hashes = dict(self.db.execute(select(Document.id, Document.file_hash).where(
+                    Document.company_id == self.settings.company_id,
+                    Document.id.in_(document_ids))).all())
+                for doc in documents:
+                    doc['file_hash'] = hashes.get(doc['id'], '')
+            observations = normalize_confirmed_activities(documents, self.settings.company_id)
+        results = []
+        for question in question_rows:
+            answer = answer_question(question, profile)
+            if needs_evidence:
+                from .ai_evidence import existing_question_coverage
+                advisory = existing_question_coverage(
+                    question, observations, self.settings.company_id, request.period)
+                if advisory:
+                    answer['uncertainty'] = ((answer.get('uncertainty') or '').strip() + ' ' + advisory).strip()
+            if question['reviewed'] and not question.get('manual_answer'):
+                from .ai_calculation import existing_calculation_provenance
+                factor_advisory = existing_calculation_provenance(profile, question.get('codes'))
+                if factor_advisory:
+                    answer['uncertainty'] = ((answer.get('uncertainty') or '').strip() + ' ' + factor_advisory).strip()
+            results.append(safe(answer))
+        return {**row(request), 'questions': results}
 
     def requests(self, period='2026-09'):
         self.period(period)
@@ -384,19 +444,19 @@ class Workspace:
         self.company(lock=True)
         request = self.questionnaire(identifier)
         for question in self.db.scalars(select(Question).where(Question.questionnaire_id == request.id)):
-            proposed = suggest_codes(question.text)
+            from .ai_mapping import suggest_reviewed_codes
+            mapping = suggest_reviewed_codes(question.id, question.text)
+            proposed = mapping['codes']
             question.proposed_codes = proposed
             question.codes = []
             question.reviewed = False
-            question.confidence = 'Medium' if proposed else 'Low'
-            question.rationale = 'Suggested from question wording; confirm or correct the disclosure.'
-            question.uncertainty = 'Wording-based suggestion, not AI. Human confirmation required.'
-            if re.search(r'scope\s*3', question.text, re.I):
-                question.uncertainty += ' Scope 3 is unsupported; address that part in an owner response.'
+            question.confidence = mapping['confidence']
+            question.rationale = mapping['rationale']
+            question.uncertainty = mapping['uncertainty']
             question.version += 1
         request.status = 'draft'
         request.version += 1
-        self.log('mapping_proposed', request.id, 'Wording-based suggestions prepared; all mappings require confirmation.', request.period)
+        self.log('mapping_proposed', request.id, 'Offline EN/BM SEDG rules and legacy Social/Governance suggestions prepared; human review required.', request.period)
         self.db.flush()
         result = self.serialize_request(request)
         self.db.commit()
@@ -456,6 +516,66 @@ class Workspace:
         if any(doc.archived_at for doc in selected_docs):
             raise HTTPException(409, 'Archived documents cannot be selected for a new approval.')
         evidence = self.serialize_documents(selected_docs, include_path=True)
+        # Existing Approve & Share now requires explicit PR #9 gap decisions.
+        # No additional endpoint: first POST returns a deterministic review
+        # challenge, the owner confirms each gap, and retries this same POST.
+        from .ai_evidence import (normalize_confirmed_activities,
+            prepare_pr9_at_owner_approval, pr9_acknowledgement_items)
+        from ai.workflow.forms import fingerprint
+        from ai.workflow.outcome import approve_outcome, export_preparation
+        selected_observations = normalize_confirmed_activities(evidence, self.settings.company_id)
+        preparation_reviews = []
+        prepared_at = safe(utcnow())
+        for question in prepared['questions']:
+            review = prepare_pr9_at_owner_approval(
+                question, selected_observations, self.settings.company_id,
+                request.period, self.actor, prepared_at)
+            if review is not None:
+                preparation_reviews.append(review)
+        question_text_by_id = {q['id']: q['text'] for q in prepared['questions']}
+        required_issues = [
+            {**item, 'question_text': question_text_by_id.get(item['question_id'], '')}
+            for item in pr9_acknowledgement_items(preparation_reviews)]
+        challenge = fingerprint({'request_id': request.id, 'version': request.version,
+            'period': request.period, 'recipient': body.recipient,
+            'selected_evidence_ids': sorted(selected),
+            'evidence_versions': sorted((d.id, d.version, d.file_hash,
+                                         d.activity_revision) for d in selected_docs),
+            'question_reviews': [
+                (q['id'], q.get('version'), q.get('reviewed_at'), q.get('codes'))
+                for q in prepared['questions']],
+            'required_issues': required_issues})
+        supplied = body.acknowledged_issues
+        required_ids = {item['id'] for item in required_issues}
+        if required_ids and (
+                body.pr9_review_hash != challenge or
+                set(supplied) != required_ids or len(supplied) != len(required_ids) or
+                len(body.pr9_review_reason.strip()) < 10):
+            raise HTTPException(409, {
+                'message': 'Review and acknowledge every outstanding PR #9 issue before sharing.',
+                'pr9_review': {'hash': challenge, 'items': required_issues}})
+        if not required_ids and (supplied or body.pr9_review_hash):
+            raise HTTPException(409, 'Review details have changed; refresh the request.')
+        # Stage 4 acceptance always uses the genuine owner's decision, never
+        # fabricated consent. Acknowledgements are bound to selected evidence.
+        private_exports = []
+        for review in preparation_reviews:
+            outcome = review.pop('_outcome', None)
+            if outcome is None:
+                continue  # Unsupported/mismatched form remains manual review.
+            accepted_requirements = sorted({req['requirement_id'] for req in review['requirements']
+                                            if req['issues']})
+            completed = approve_outcome(outcome, reviewer=self.actor,
+                reason=body.pr9_review_reason.strip() or 'No unresolved gaps in approved preparation',
+                at=prepared_at, acknowledged_requirements=accepted_requirements)
+            validated_export = export_preparation(completed)
+            private_exports.append({'question_id': review['question_id'],
+                                    'approved_preparation': json.loads(validated_export)})
+            review['status'] = 'preparation_approved_with_gaps' if accepted_requirements else 'preparation_approved'
+            review['acknowledged_requirement_ids'] = accepted_requirements
+        owner_review = {'reviewer': self.actor, 'at': prepared_at,
+            'reason': body.pr9_review_reason.strip(),
+            'challenge_hash': challenge, 'acknowledged_issues': sorted(required_ids)}
         included = set(selected)
         for question in prepared['questions']:
             question['evidence_ids'] = [identifier for identifier in question.get('evidence_ids', []) if identifier in included]
@@ -470,6 +590,18 @@ class Workspace:
             'approved_by': self.actor, 'approved_at': safe(created), 'questions': prepared['questions'],
             'questionnaire_version': request.version, 'calculation_version': 'rules-v1',
             'selected_evidence_ids': selected, 'evidence': evidence}
+        # Keep statuses/gaps only. Missing PR #9 consent never becomes approved.
+        if preparation_reviews:
+            snapshot['pr9_preparation_review'] = preparation_reviews
+            snapshot['pr9_owner_review'] = owner_review
+            # Full PR #9 audit/exports stay private in the immutable DB
+            # snapshot, NOT exposed through customer share-token responses.
+            snapshot['pr9_private_preparations'] = private_exports
+        # PR #9 snapshot fingerprint protects preparation state against subsequent
+        # accidental changes. It is an integrity check, not a digital signature.
+        from ai.workflow.forms import fingerprint
+        snapshot = safe(snapshot)
+        snapshot['preparation_snapshot_sha256'] = fingerprint(snapshot)
         pack = ApprovedSnapshot(company_id=self.settings.company_id, questionnaire_id=request.id,
             token=secrets.token_urlsafe(32), recipient=body.recipient, approved_by=self.actor,
             created_at=created, snapshot=safe(snapshot))
@@ -485,7 +617,19 @@ class Workspace:
     @staticmethod
     def serialize_pack(pack):
         output = row(pack)
+        # Older packs have no digest; keep them readable without falsely claiming
+        # they received the new protection.
+        saved = output['snapshot']
+        digest = saved.get('preparation_snapshot_sha256')
+        if digest:
+            from ai.workflow.forms import fingerprint
+            body = {key: value for key, value in saved.items()
+                    if key != 'preparation_snapshot_sha256'}
+            if fingerprint(body) != digest:
+                raise HTTPException(409, 'Approved snapshot integrity check failed.')
         # Never expose private object paths or hashes; customer evidence goes through token routes.
+        output['snapshot'].pop('pr9_private_preparations', None)
+        output['snapshot'].pop('pr9_owner_review', None)
         for document in output['snapshot'].get('evidence', []):
             document.pop('object_path', None)
             document.pop('file_hash', None)
@@ -497,6 +641,14 @@ class Workspace:
                                   ApprovedSnapshot.company_id == self.settings.company_id))
         if not pack:
             raise HTTPException(404, 'Approved pack not found.')
+        # Guard the existing evidence-download route too.
+        saved = pack.snapshot
+        digest = saved.get('preparation_snapshot_sha256')
+        if digest:
+            from ai.workflow.forms import fingerprint
+            if fingerprint({key: value for key, value in saved.items()
+                            if key != 'preparation_snapshot_sha256'}) != digest:
+                raise HTTPException(409, 'Approved snapshot integrity check failed.')
         return pack
 
     def get_pack(self, token):

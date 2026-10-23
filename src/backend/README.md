@@ -1,8 +1,10 @@
 # ESG Passport backend
 
-FastAPI persists the synthetic monthly workspace in Supabase Postgres and stores original PNG/JPEG/PDF evidence in a private Supabase Storage bucket. Calculations use decimal arithmetic and confirmed activity revisions. Automatic OCR and live AI are not connected: extracted fields require manual entry and human confirmation; questionnaire suggestions use deterministic wording matching.
+FastAPI persists the synthetic monthly workspace in Supabase Postgres and stores original PNG/JPEG/PDF evidence in a private Supabase Storage bucket. Calculations use decimal arithmetic and confirmed activity revisions. Offline RapidOCR extracts *candidate* quantities and billing dates from supported images and single-page PDFs into the existing record editor; human correction and confirmation remain required. The PR #9 deterministic AI workflow assists bilingual questionnaire mapping, evidence coverage, calculation provenance and explicit owner gap acknowledgement. There is no external LLM service, independent evidence assurance or automatic certification.
 
 This is a local prototype. The role switch / `X-Demo-Role` header is a demonstration of owner, clerk and customer permissions, not real authentication. Keep local direct access bound to `127.0.0.1`. The [protected Render hackathon deployment](../../docs/DEPLOY-RENDER.md) adds a server key and shared website password; real-user deployment still requires identity, authorization and tenant isolation. Browser roles receive no direct database table privileges. Only the Python server receives the database password and Supabase server key.
+
+Python 3.12 is required by the offline RapidOCR dependency. The Render backend and GitHub Actions checks use the same version; the frontend continues to use Node 22.
 
 ## Windows setup
 
