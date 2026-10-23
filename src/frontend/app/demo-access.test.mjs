@@ -59,8 +59,12 @@ test('password-free full ESG workspace is routed only to synthetic backend',asyn
  const result=await proxyBackend(anonymous,['profile'],sandbox,mock);
  assert.equal(result.status,200);
  assert.equal(upstreamTarget,'https://backend.example/sandbox/profile?period=2026-09');
- const upload=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin},body:'x'}),['documents'],sandbox,()=>{throw Error('public uploads not allowed')});
- assert.equal(upload.status,403);
+ let targetUrl='';
+ const upload=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin,'content-type':'multipart/form-data; boundary=demo'},body:'synthetic'}),['documents'],sandbox,async target=>{targetUrl=target;return Response.json({synthetic:true},{status:201});});
+ assert.equal(upload.status,201);
+ assert.equal(targetUrl,'https://backend.example/sandbox/documents');
+ const oversize=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin,'content-type':'multipart/form-data'},body:new Uint8Array(600*1024)}),['documents'],sandbox,()=>{throw Error('oversize should not be sent')});
+ assert.equal(oversize.status,413);
  const crossSite=await proxyBackend(req('/api/backend/declarations/G2.1',{method:'PUT',headers:{origin:'https://evil.example'},body:'{}'}),['declarations','G2.1'],sandbox,()=>{throw Error('must not reach backend')});
  assert.equal(crossSite.status,403);
  const real=await proxyBackend(authed('/profile'),['profile'],sandbox,mock);

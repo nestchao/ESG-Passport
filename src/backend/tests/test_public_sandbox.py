@@ -32,3 +32,25 @@ def test_public_sandbox_flags_cannot_remove_backend_auth():
                                     public_workspace_enabled=False))
     with TestClient(app) as client:
         assert client.get('/sandbox/profile',headers={'X-Demo-Backend-Key':KEY,'X-Demo-Role':'owner'}).status_code==404
+
+
+def test_approved_synthetic_png_upload():
+    from pathlib import Path
+    from PIL import Image
+    from io import BytesIO
+    app=create_app(settings=Settings(demo_access_enabled=True,backend_shared_key=KEY,public_workspace_enabled=True))
+    headers={'X-Demo-Backend-Key':KEY,'X-Demo-Role':'clerk'}
+    fixture=Path(__file__).resolve().parents[2]/'ai'/'synthetic_dataset'/'electricity'/'electricity-itemised-001-clean.png'
+    content=fixture.read_bytes()
+    with TestClient(app) as client:
+        fake=BytesIO();Image.new('RGB',(24,24),'white').save(fake,format='PNG')
+        result=client.post('/sandbox/documents',headers=headers,data={'type':'electricity','period':'2026-05'},files={'file':('fake.png',fake.getvalue(),'image/png')})
+        assert result.status_code==403,result.text
+        result=client.post('/sandbox/documents',headers=headers,data={'type':'electricity','period':'2026-04'},files={'file':(fixture.name,content,'image/png')})
+        assert result.status_code==422,result.text
+        result=client.post('/sandbox/documents',headers=headers,data={'type':'electricity','period':'2026-05'},files={'file':(fixture.name,content,'image/png')})
+        assert result.status_code==201,result.text
+        doc=result.json()
+        assert doc['company_id']=='public-fictional-workspace' and doc['period']=='2026-05' and not doc['confirmed']
+        assert client.get('/sandbox/documents/'+doc['id']+'/file',headers=headers).content==content
+        assert client.post('/sandbox/documents',headers=headers,data={'type':'electricity','period':'2026-05'},files={'file':(fixture.name,content,'image/png')}).status_code==409

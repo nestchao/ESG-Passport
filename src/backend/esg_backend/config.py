@@ -31,6 +31,7 @@ class Settings:
     backend_shared_key: str = ''
     render_hosted: bool = False
     public_workspace_enabled: bool = False
+    sandbox_instance: bool = False
 
     @classmethod
     def from_env(cls) -> 'Settings':

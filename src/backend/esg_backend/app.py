@@ -122,6 +122,9 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     @api.post('/documents', status_code=201)
     def upload(file: UploadFile = File(), type: str = Form(), period: Period = Form('2026-09'), work=Depends(workspace)):
         content = file.file.read(MAX_FILE + 1)
+        if settings.sandbox_instance:
+            from .public_sandbox import validate_synthetic_upload
+            validate_synthetic_upload(content, type, period)
         return work.upload(file.filename, type, content, file.content_type, period)
 
     @api.get('/documents/{document_id}')
