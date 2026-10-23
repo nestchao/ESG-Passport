@@ -106,3 +106,27 @@ always requires the private server-to-server key. Removing `DEMO_PASSWORD` is
 not necessary or recommended. The sandbox displays the normal site and does
 not make actual ESG claims. The older `/demo` static experience redirects to
 `/` when this option is enabled.
+
+## Local browser OCR scanner (public `/ocr`)
+
+From **Records → Add records → Open Live OCR Scanner**, visitors can recognize
+arbitrary PNG, JPEG or PDFs (up to 10 MB, at most three PDF pages) **in their
+own browser**. Tesseract.js loads an English WebAssembly OCR model on demand;
+PDF.js reads selectable PDF text directly or rasterizes scanned pages before
+client-side OCR. The original file is shown in a local object URL and is
+never sent to Supabase or the communal synthetic backend by this scanner.
+Language/engine data may be downloaded by the visitor's browser.
+
+The scanner conservatively proposes document supplier, dates, quantity and
+units for electricity, water, diesel, petrol and waste. It deliberately leaves
+unverified waste transfer classification unresolved, exposes the complete
+recognized text for correction, and requires explicit review before a
+**local JSON export**. No client scan is automatically confirmed or counted
+as verified ESG disclosure. The export does **not** create a backend record;
+original protected staff uploads retain the existing server-side RapidOCR
+save/review process. Public synthetic records still accept only the three
+SHA-256-verified sample PNGs, using their precomputed fixture extraction.
+
+The anonymous access gate allows only `/ocr` and the bundled PDF worker
+asset required for scanning, in addition to previously approved public
+paths; protected real backend and customer-sharing routes are unchanged.

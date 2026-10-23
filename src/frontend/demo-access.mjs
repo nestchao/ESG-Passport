@@ -103,7 +103,7 @@ export function accessGate(request,config){
  // Public, completely synthetic sandbox. Explicit exact-path allowlist only;
  // NEVER expose /api/backend/* or real workspace pages through this gate.
  if(config.publicWorkspaceEnabled&&['GET','HEAD'].includes(request.method)&&path==='/demo')return redirect(new URL('/',config.publicOrigin||url.origin).href);
- if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
+ if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||path==='/ocr'||path==='/ocr-assets/pdf.worker.min.mjs'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
  if(config.publicWorkspaceEnabled&&(path==='/'&&['GET','HEAD'].includes(request.method)||path.startsWith('/api/backend/')&&['GET','POST','PUT','DELETE'].includes(request.method)))return null;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
