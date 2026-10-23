@@ -33,6 +33,32 @@ test('login throttling logout and origin checks',async()=>{
  assert.match(handleLogout(req('/api/demo/logout',{method:'POST',headers:{origin}}),cfg()).headers.get('set-cookie'),/Max-Age=0/);
  assert.equal(handleLogout(req('/api/demo/logout',{method:'POST'}),cfg()).status,403);
 });
+test('originless same-origin form navigation works but cross-site CSRF remains denied',async()=>{
+ const form=new URLSearchParams({password:env.DEMO_PASSWORD});
+ const headers={'content-type':'application/x-www-form-urlencoded',
+   'sec-fetch-site':'same-origin','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
+ const attempt=h=>req('/api/demo/login',{method:'POST',headers:h,body:form});
+ const good=await handleLogin(attempt(headers),cfg(),createLoginLimiter());
+ assert.equal(good.status,303);
+ assert.match(good.headers.get('set-cookie'),/esg_demo_session=/);
+ for(const h of [
+  {...headers,'sec-fetch-site':'cross-site'},
+  {...headers,'sec-fetch-site':'same-site'},
+  {...headers,'sec-fetch-mode':'cors'},
+  {...headers,'sec-fetch-dest':'empty'},
+  {...headers,origin:'null'},
+  {...headers,origin:'https://evil.example'},
+  {'content-type':'application/x-www-form-urlencoded'}
+ ]){
+  const response=await handleLogin(attempt(h),cfg(),createLoginLimiter());
+  assert.equal(response.status,403,JSON.stringify(h));
+  assert.equal(response.headers.has('set-cookie'),false);
+ }
+ const denied=await proxyBackend(authed('/documents',{method:'POST',headers:{
+  'sec-fetch-site':'same-origin','sec-fetch-mode':'cors','sec-fetch-dest':'empty'
+ },body:'{}'}),['documents'],cfg(),async()=>{throw Error('must not call API');});
+ assert.equal(denied.status,403);
+});
 test('proxy auth headers role upstream errors no redirects or cookies',async()=>{
  let call;const upstream=async(...args)=>{call=args;return new Response('{"detail":"Denied"}',{status:403,headers:{'content-type':'application/json','set-cookie':'upstream=bad','location':'https://secret.example'}});};
  assert.equal((await proxyBackend(req('/api/backend/profile'),['profile'],cfg(),upstream)).status,401);
