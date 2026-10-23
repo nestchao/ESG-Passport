@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">ESG Passport</title>
+  <desc id="desc">A verified document with a green leaf, representing evidence-backed sustainability.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#103E37"/>
+      <stop offset="100%" stop-color="#08695B"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A9EAB5"/>
+      <stop offset="100%" stop-color="#54D0A1"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#background)"/>
+  <path d="M39 28h37l16 16v49a9 9 0 0 1-9 9H39a9 9 0 0 1-9-9V37a9 9 0 0 1 9-9z" fill="#F5FBF7"/>
+  <path d="M76 28v16h16" fill="#D5E9E1"/>
+  <path d="M76 28v16h16" fill="none" stroke="#A9C9BB" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M43 51h18M43 59h14M43 90h33" stroke="#B6D4C6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M77 48c-16-1-29 9-30 24 8 8 19 8 29 2 10-7 12-18 11-27-3 1-7 1-10 1z" fill="url(#leaf)"/>
+  <path d="M48 77c10-8 20-14 33-20" stroke="#16856D" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="m43 96 7 7 15-16" stroke="#F5FBF7" stroke-width="4" stroke-linecap="round" fill="none" transform="translate(48 -7) scale(.64)"/>
+</svg>
