@@ -16,9 +16,14 @@ services:
     region: singapore
     branch: main
     autoDeployTrigger: commit
-    rootDir: src/backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn esg_backend.app:app --host 0.0.0.0 --port $PORT
+    # Backend imports src/ai/workflow and its requirements include a sibling path.
+    # Do not set rootDir: src/backend; Render removes files outside rootDir.
+    buildFilter:
+      paths:
+        - src/backend/**
+        - src/ai/workflow/**
+    buildCommand: pip install -r src/backend/requirements.txt
+    startCommand: cd src/backend && uvicorn esg_backend.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - fromGroup: esg-passport-demo-access

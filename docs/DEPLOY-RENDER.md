@@ -31,7 +31,7 @@ The Blueprint generates BACKEND_SHARED_KEY once in a shared environment group li
 
 Frontend: root src/frontend, Node 22, build npm ci && npm run build, start npm run start -- --hostname 0.0.0.0 --port $PORT, health path /login.
 
-Backend: root src/backend, Python 3.13, build pip install -r requirements.txt, start uvicorn esg_backend.app:app --host 0.0.0.0 --port $PORT, health path /health.
+Backend: repository root (no rootDir), Python 3.12 pinned by root .python-version. Build with pip install -r src/backend/requirements.txt; start with cd src/backend && uvicorn esg_backend.app:app --host 0.0.0.0 --port $PORT; health path /health. The backend imports sibling src/ai/workflow, so rootDir: src/backend prevents the build and runtime from accessing required AI files. Use buildFilter paths for src/backend/** and src/ai/workflow/** instead.
 
 These are Render Linux commands. Keep $PORT as written. Both services use Auto-Deploy On Commit and branch main. The login page is public; protected pages and API proxy require a session. GET /health is the API's only unauthenticated route.
 
