@@ -44,6 +44,30 @@ test('synthetic public demo and only its selected images open without session',(
  assert.equal(accessGate(req('/',{method:'POST'}),c).status,303);
  assert.equal(accessGate(req('/'),getDemoConfig({})),null);
 });
+test('password-free full ESG workspace is routed only to synthetic backend',async()=>{
+ const sandbox=getDemoConfig({...env,PUBLIC_WORKSPACE_ENABLED:'true'});
+ assert.equal(sandbox.publicWorkspaceEnabled,true);
+ assert.equal(accessGate(req('/'),sandbox),null);
+ assert.equal(accessGate(req('/?period=2026-09'),sandbox),null);
+ assert.equal(accessGate(req('/api/backend/profile'),sandbox),null);
+ assert.equal(accessGate(req('/api/backend/documents',{method:'POST',headers:{origin}}),sandbox),null);
+ assert.equal(accessGate(req('/demo'),sandbox).headers.get('location'),origin+'/');
+ assert.equal(accessGate(req('/private'),sandbox).headers.get('location'),origin+'/login?next=%2Fprivate');
+ let upstreamTarget='';
+ const mock=async(target,options)=>{upstreamTarget=target;assert.equal(options.headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);assert.equal(options.headers.has('cookie'),false);return Response.json({synthetic:true})};
+ const anonymous=req('/api/backend/profile?period=2026-09',{headers:{'X-Demo-Role':'owner'}});
+ const result=await proxyBackend(anonymous,['profile'],sandbox,mock);
+ assert.equal(result.status,200);
+ assert.equal(upstreamTarget,'https://backend.example/sandbox/profile?period=2026-09');
+ const upload=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin},body:'x'}),['documents'],sandbox,()=>{throw Error('public uploads not allowed')});
+ assert.equal(upload.status,403);
+ const crossSite=await proxyBackend(req('/api/backend/declarations/G2.1',{method:'PUT',headers:{origin:'https://evil.example'},body:'{}'}),['declarations','G2.1'],sandbox,()=>{throw Error('must not reach backend')});
+ assert.equal(crossSite.status,403);
+ const real=await proxyBackend(authed('/profile'),['profile'],sandbox,mock);
+ assert.equal(real.status,200);
+ assert.equal(upstreamTarget,'https://backend.example/profile');
+ assert.equal(accessGate(req('/api/demo/logout'),sandbox),null);
+});
 test('login throttling logout and origin checks',async()=>{
  const limiter=createLoginLimiter();const login=password=>req('/api/demo/login?next=https://evil.example',{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password})});
  const bad=await handleLogin(login('wrong'),cfg(),limiter);assert.equal(bad.status,303);assert.equal(bad.headers.get('location'),'/login?error=1');assert.equal(bad.headers.has('set-cookie'),false);

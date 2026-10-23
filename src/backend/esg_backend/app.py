@@ -218,6 +218,11 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     def reset(work=Depends(workspace)):
         return work.reset()
 
+    if settings.public_workspace_enabled:
+        # No anonymous request reaches real Supabase storage or sessions.
+        from .public_sandbox import make_public_app
+        api.mount('/sandbox',make_public_app(settings),name='public-synthetic-sandbox')
+
     return api
 
 

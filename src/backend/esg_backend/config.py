@@ -30,6 +30,7 @@ class Settings:
     demo_access_enabled: bool = False
     backend_shared_key: str = ''
     render_hosted: bool = False
+    public_workspace_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> 'Settings':
@@ -44,6 +45,7 @@ class Settings:
             demo_access_enabled=os.getenv('DEMO_ACCESS_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes'),
             backend_shared_key=os.getenv('BACKEND_SHARED_KEY', '').strip(),
             render_hosted=os.getenv('RENDER', '').strip().lower() == 'true',
+            public_workspace_enabled=os.getenv('PUBLIC_WORKSPACE_ENABLED', '').strip().lower() == 'true',
         )
 
     def validate_demo_access(self) -> None:
@@ -54,6 +56,8 @@ class Settings:
             raise ValueError('Protected demo requires BACKEND_SHARED_KEY with at least 32 characters.')
         if self.demo_access_enabled and self.allow_sample_reset:
             raise ValueError('Protected demo requires ALLOW_SAMPLE_RESET=false.')
+        if self.public_workspace_enabled and not self.demo_access_enabled:
+            raise ValueError('Public sandbox requires protected backend demo access.')
 
     def validate(self) -> None:
         missing = [name for name, value in (

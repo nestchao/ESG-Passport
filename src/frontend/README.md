@@ -87,3 +87,23 @@ protected by the existing session and role checks; Supabase credentials are
 never provided to the public page. Do **not** remove DEMO_PASSWORD or disable
 DEMO_ACCESS_ENABLED in Render. The public demo is not a replacement for real
 production authentication, audit, or verified ESG claims.
+
+## Password-free full ESG workspace (public synthetic sandbox)
+
+`PUBLIC_WORKSPACE_ENABLED=true` is applied to both services from the Render Blueprint
+environment group. Anonymous visitors to `/` see the **original complete ESG Passport
+UI**, not a separate login/demo mockup. The frontend proxies their existing
+`/api/backend/*` calls to `/sandbox/*` on the backend, using only its own
+server-side shared key. The backend mounts a separate, generated **in-memory
+SQLite database and synthetic-only in-memory evidence storage**. This code
+path never opens Supabase connections or files and resets on restart; it is
+shared among anonymous visitors. Don't enter personal information: the
+fictional workspace is communal. File uploads are disabled for anonymous
+users, preventing real documents from entering the public sample store.
+
+The production Postgres/Supabase services and authorized real customer shares
+remain behind the original signed staff session at `/login`; the real backend
+always requires the private server-to-server key. Removing `DEMO_PASSWORD` is
+not necessary or recommended. The sandbox displays the normal site and does
+not make actual ESG claims. The older `/demo` static experience redirects to
+`/` when this option is enabled.

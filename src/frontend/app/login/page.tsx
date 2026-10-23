@@ -9,9 +9,9 @@ export default async function DemoLogin({searchParams}:{searchParams:Promise<{er
  const loginToken=(await cookies()).get(LOGIN_CSRF_COOKIE)?.value||'';
  return <main className="demo-login"><section className="demo-login-card" aria-labelledby="login-title">
   <span className="demo-login-brand">Orbyte <span>ESG Passport</span></span>
-  <p className="demo-login-eyebrow">PRIVATE DEMO</p>
-  <h1 id="login-title">Welcome to your ESG workspace</h1>
-  <p>Enter the demo password to explore the workspace and customer packs.</p>
+  <p className="demo-login-eyebrow">OPTIONAL STAFF ACCESS</p>
+  <h1 id="login-title">Staff access to the protected workspace</h1>
+  <p>The public ESG Passport opens without a password. Staff can sign in here to access protected production records.</p>
   <form action="/api/demo/login" method="post">
    <input type="hidden" name="next" value={safeReturnTo(next)}/>
    <input type="hidden" name="csrf_token" value={loginToken}/>
@@ -20,7 +20,7 @@ export default async function DemoLogin({searchParams}:{searchParams:Promise<{er
    {error&&<p id="login-error" role="alert">Unable to sign in. Check the password and try again.</p>}
    <button type="submit">Enter workspace <span aria-hidden="true">→</span></button>
   </form>
-  <p className="demo-public-option">Want to explore without a password? <a href="/demo">Open the public synthetic demo →</a></p>
+  <p className="demo-public-option">Want the password-free ESG Passport? <a href="/">Open ESG Passport →</a></p>
   <small>Your session lasts eight hours. Sign out when you finish on a shared device.</small>
  </section></main>;
 }

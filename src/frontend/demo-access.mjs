@@ -22,7 +22,7 @@ export function getDemoConfig(environment=process.env){
   publicOrigin=parsed.origin;
  }
  if(environment.RENDER==='true'&&!publicOrigin)throw Error('Render requires RENDER_EXTERNAL_URL or DEMO_PUBLIC_ORIGIN for its public origin.');
- return {enabled:true,publicOrigin,password:environment.DEMO_PASSWORD,secret:environment.DEMO_SESSION_SECRET,backendKey:environment.BACKEND_SHARED_KEY,backendUrl:backend.origin};
+ return {enabled:true,publicWorkspaceEnabled:environment.PUBLIC_WORKSPACE_ENABLED==='true',publicOrigin,password:environment.DEMO_PASSWORD,secret:environment.DEMO_SESSION_SECRET,backendKey:environment.BACKEND_SHARED_KEY,backendUrl:backend.origin};
 }
 const signature=(value,config)=>createHmac('sha256',config.secret).update(value).digest('base64url');
 export function createSession(config,now=Math.floor(Date.now()/1000)){
@@ -102,7 +102,9 @@ export function accessGate(request,config){
  const url=new URL(request.url),path=url.pathname;
  // Public, completely synthetic sandbox. Explicit exact-path allowlist only;
  // NEVER expose /api/backend/* or real workspace pages through this gate.
+ if(config.publicWorkspaceEnabled&&['GET','HEAD'].includes(request.method)&&path==='/demo')return redirect(new URL('/',config.publicOrigin||url.origin).href);
  if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
+ if(config.publicWorkspaceEnabled&&(path==='/'&&['GET','HEAD'].includes(request.method)||path.startsWith('/api/backend/')&&['GET','POST','PUT','DELETE'].includes(request.method)))return null;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
  const trustedOrigin=config.publicOrigin||url.origin;
@@ -157,11 +159,22 @@ export function handleLogout(request,config){
 function validPath(segments){return Array.isArray(segments)&&segments.length>0&&segments.every(segment=>typeof segment==='string'&&segment.length>0&&segment!=='.'&&segment!=='..'&&!/[\x00-\x20\x7f%\\/:?#]/.test(segment));}
 export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  if(!config.enabled)return error('Demo proxy is disabled.',404);
- if(!verifySession(tokenFrom(request),config))return error('Demo sign-in required.',401);
+ const isStaff=verifySession(tokenFrom(request),config);
+ if(!isStaff&&!config.publicWorkspaceEnabled)return error('Demo sign-in required.',401);
  if(!['GET','POST','PUT','DELETE'].includes(request.method))return error('Method not allowed.',405);
- if(request.method!=='GET'&&!sameOrigin(request,config))return error('Request origin is not allowed.',403);
+ if(request.method!=='GET'){
+  const nativeOrigin=sameOrigin(request,config);
+  const site=request.headers.get('sec-fetch-site');
+  // Some Edge navigations send Origin: null. For the synthetic-only sandbox,
+  // accept native same-origin browser writes; real Supabase writes still require
+  // the original exact Origin check and an authenticated staff session.
+  if(!nativeOrigin&&(isStaff||site!=='same-origin'))return error('Request origin is not allowed.',403);
+ }
  if(!validPath(segments))return error('Invalid backend path.',400);
- const incoming=new URL(request.url),target=`${config.backendUrl}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;
+ if(!isStaff&&request.method==='POST'&&segments.length===1&&segments[0]==='documents')
+  return error('Public sandbox uploads are disabled. Use its preloaded synthetic documents.',403);
+ const incoming=new URL(request.url),prefix=isStaff?'':'/sandbox';
+ const target=`${config.backendUrl}${prefix}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;
  // Explicit allowlist: cookies, authorization and every incoming shared-key header are dropped.
  const outgoing=new Headers();for(const name of ['content-type','accept','x-demo-role']){const value=request.headers.get(name);if(value)outgoing.set(name,value);}
  outgoing.set('X-Demo-Backend-Key',config.backendKey);

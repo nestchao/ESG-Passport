@@ -83,3 +83,16 @@ form includes a link to the public sandbox, while staff use `/login` with the
 existing `DEMO_PASSWORD`. Do not unset or weaken the demo access configuration
 or connect the public demo to Supabase. Its review and sharing steps are only
 local browser simulations; they cannot approve or expose customer data.
+
+### Anonymous full workspace using synthetic-only storage
+
+Set shared Blueprint `PUBLIC_WORKSPACE_ENABLED=true` for both services (included
+in `render.yaml`). Visitors at `/` now open the **full existing ESG Passport
+interface** without credentials. All anonymous API traffic is forwarded to
+`/sandbox` on the FastAPI service, which uses a separate in-memory SQLite
+database and synthetic test-image storage; it never uses the real Supabase
+engine/storage. Anonymous file uploads are refused. The shared sandbox is
+volatile (restart clears changes) and communal (don't enter confidential
+information). The real database, administrative APIs, private share links
+and optional protected staff login remain session-gated. The backend
+server-to-server shared key and `DEMO_PASSWORD` must remain configured.
