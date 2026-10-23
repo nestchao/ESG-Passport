@@ -122,10 +122,13 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     @api.post('/documents', status_code=201)
     def upload(file: UploadFile = File(), type: str = Form(), period: Period = Form('2026-09'), work=Depends(workspace)):
         content = file.file.read(MAX_FILE + 1)
+        precomputed = None
         if settings.sandbox_instance:
-            from .public_sandbox import validate_synthetic_upload
+            from .public_sandbox import validate_synthetic_upload, fixture_extraction
             validate_synthetic_upload(content, type, period)
-        return work.upload(file.filename, type, content, file.content_type, period)
+            precomputed = fixture_extraction(content)
+        return work.upload(file.filename, type, content, file.content_type, period,
+                           precomputed_extraction=precomputed)
 
     @api.get('/documents/{document_id}')
     def document(document_id: str, work=Depends(workspace)):

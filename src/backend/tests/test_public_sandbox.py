@@ -52,5 +52,8 @@ def test_approved_synthetic_png_upload():
         assert result.status_code==201,result.text
         doc=result.json()
         assert doc['company_id']=='public-fictional-workspace' and doc['period']=='2026-05' and not doc['confirmed']
+        assert doc['extraction']['ocr_engine']=='synthetic_fixture_text_not_live_ocr'
+        assert doc['extraction']['activities'][0]['quantity']=='2577'
+        assert 'precomputed from the fictional' in str(doc['extraction']['uncertainty_notes'])
         assert client.get('/sandbox/documents/'+doc['id']+'/file',headers=headers).content==content
         assert client.post('/sandbox/documents',headers=headers,data={'type':'electricity','period':'2026-05'},files={'file':(fixture.name,content,'image/png')}).status_code==409

@@ -4,6 +4,10 @@ This module does not import, instantiate or request Supabase services.
 The in-memory database and synthetic evidence are destroyed on restart.
 """
 from dataclasses import replace
+from copy import deepcopy
+from functools import lru_cache
+import json
+from pathlib import Path
 from hashlib import sha256
 from fastapi import HTTPException
 from threading import Lock
@@ -27,6 +31,16 @@ APPROVED_TEST_IMAGES = {
     'c4bc11002caa2ed8ed82317e6214020c54209d776295f8ac26ee21df916e3b0a': ('waste', '2026-03'),
 }
 MAX_PUBLIC_IMAGE_BYTES = 512 * 1024
+
+@lru_cache(maxsize=1)
+def synthetic_fixture_extractions():
+    """Precomputed recognition from known generated fixtures; never live OCR."""
+    return json.loads(Path(__file__).with_name('synthetic_ocr_examples.json').read_text(encoding='utf-8'))
+
+
+def fixture_extraction(content: bytes) -> dict:
+    digest=sha256(content).hexdigest()
+    return deepcopy(synthetic_fixture_extractions()[digest])
 
 
 def validate_synthetic_upload(content: bytes, category: str, period: str) -> None:
