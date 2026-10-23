@@ -23,6 +23,27 @@ test('workspace shares evidence and API require session',()=>{
  assert.equal(accessGate(req('/',{headers:{cookie:cookie()}}),cfg()),null);
  assert.equal(accessGate(req('/'),getDemoConfig({})),null);assert.equal(accessGate(req('/login'),cfg()),null);
 });
+test('synthetic public demo and only its selected images open without session',()=>{
+ const c=cfg();
+ assert.equal(accessGate(req('/demo'),c),null);
+ assert.equal(accessGate(req('/demo',{method:'POST'}),c).status,303);
+ const allowed=['electricity-itemised-001','water-sidebar-001','waste-landscape-001'];
+ for(const filename of allowed)assert.equal(accessGate(req(`/demo-assets/${filename}.png`),c),null);
+ const homepage=accessGate(req('/'),c);
+ assert.equal(homepage.status,303);
+ assert.equal(homepage.headers.get('location'),origin+'/demo');
+ assert.equal(accessGate(req('/?share=secret'),c).headers.get('location'),origin+'/login?next=%2F%3Fshare%3Dsecret');
+ for(const path of ['/demo/admin','/demo/../profile','/demo-assets/missing.png','/demo-assets/private.txt']){
+  const result=accessGate(req(path),c);
+  assert.notEqual(result,null,path);
+ }
+ for(const path of ['/api/backend/profile','/api/backend/documents','/api/backend/shares/private','/api/backend/activity-log']){
+  const response=accessGate(req(path),c);
+  assert.equal(response.status,401,path);
+ }
+ assert.equal(accessGate(req('/',{method:'POST'}),c).status,303);
+ assert.equal(accessGate(req('/'),getDemoConfig({})),null);
+});
 test('login throttling logout and origin checks',async()=>{
  const limiter=createLoginLimiter();const login=password=>req('/api/demo/login?next=https://evil.example',{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password})});
  const bad=await handleLogin(login('wrong'),cfg(),limiter);assert.equal(bad.status,303);assert.equal(bad.headers.get('location'),'/login?error=1');assert.equal(bad.headers.has('set-cookie'),false);

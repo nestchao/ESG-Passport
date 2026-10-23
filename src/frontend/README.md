@@ -63,3 +63,27 @@ Policies in Place uses four accessible status cards, a known-status count, saved
 ## Hosted hackathon demo
 
 Follow [the Render setup guide](../../docs/DEPLOY-RENDER.md). Hosted mode uses a shared demo password, an eight-hour signed HttpOnly session and a same-origin /api/backend proxy. Server keys never reach the browser. Both workspace and customer-pack access require the demo session; pack tokens still restrict evidence. Local mode stays unchanged. The frontend start script accepts Render hostname and port arguments.
+
+## Password-free synthetic public demo
+
+With protected demo access enabled on Render, unauthenticated visitors opening
+`/` without a query are redirected to **`/demo`**, a separate Next.js client
+page. Visitors can also open `/demo` directly without a password, or choose
+"Open the public synthetic demo" from the `/login` page. Protected staff
+continue using `/login` to access the existing, real workspace.
+
+The public route includes three locally bundled, generated test images from
+`src/ai/synthetic_dataset` (electricity, water, waste). The page simulates
+OCR review, SEDG questionnaire matching and owner/customer Passport preview
+**entirely in volatile browser state**, with no HTTP calls, writes, data
+uploads, external LLM usage, real sharing URLs or storage access. OCR values
+are sample labels, not fresh AI processing. Waste diversion is merely an
+unverified suggestion; the displayed electricity emission factor is explicitly
+illustrative. Browser refresh resets edits, and "Reset demo" clears them.
+
+`accessGate` explicitly allows only `/demo` and the three named `/demo-assets`
+images. All `/api/backend/*` routes and actual customer share links remain
+protected by the existing session and role checks; Supabase credentials are
+never provided to the public page. Do **not** remove DEMO_PASSWORD or disable
+DEMO_ACCESS_ENABLED in Render. The public demo is not a replacement for real
+production authentication, audit, or verified ESG claims.

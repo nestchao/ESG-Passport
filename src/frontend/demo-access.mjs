@@ -99,12 +99,16 @@ export function safeReturnTo(value){
 const loginLocation=(next,error=false)=>'/login'+(error?'?error=1':'')+(next!=='/'?`${error?'&':'?'}next=${encodeURIComponent(next)}`:'');
 export function accessGate(request,config){
  if(!config.enabled)return null;
- const path=new URL(request.url).pathname;
+ const url=new URL(request.url),path=url.pathname;
+ // Public, completely synthetic sandbox. Explicit exact-path allowlist only;
+ // NEVER expose /api/backend/* or real workspace pages through this gate.
+ if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
+ const trustedOrigin=config.publicOrigin||url.origin;
+ if(request.method==='GET'&&path==='/'&&url.search==='')return redirect(new URL('/demo',trustedOrigin).href);
  // Next.js Proxy requires absolute Location URLs for middleware redirects.
- // Use the trusted hosted origin instead of Render's internal HTTP listener.
- const loginUrl=new URL(loginLocation(safeReturnTo(path+new URL(request.url).search)),config.publicOrigin||new URL(request.url).origin);
+ const loginUrl=new URL(loginLocation(safeReturnTo(path+url.search)),trustedOrigin);
  return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginUrl.href);
 }
 function sameOrigin(request,config){

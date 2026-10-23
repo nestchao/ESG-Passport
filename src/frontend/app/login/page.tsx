@@ -20,6 +20,7 @@ export default async function DemoLogin({searchParams}:{searchParams:Promise<{er
    {error&&<p id="login-error" role="alert">Unable to sign in. Check the password and try again.</p>}
    <button type="submit">Enter workspace <span aria-hidden="true">→</span></button>
   </form>
+  <p className="demo-public-option">Want to explore without a password? <a href="/demo">Open the public synthetic demo →</a></p>
   <small>Your session lasts eight hours. Sign out when you finish on a shared device.</small>
  </section></main>;
 }
