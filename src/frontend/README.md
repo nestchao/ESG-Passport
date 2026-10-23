@@ -12,7 +12,14 @@ npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000`. Change it in the repository-root `.env` if necessary and restart the frontend; Next.js embeds public variables at build time. The backend CORS origins must include the frontend origin. Use Node.js 22 or newer. The Node-only configuration reads the shared root file but exports only `NEXT_PUBLIC_API_URL` to the browser; it never exports Supabase/database secrets or other values from that file. Do not create a frontend `.env.local`. Shell variables take precedence.
+Use frontend `http://127.0.0.1:3000` with the backend on `http://127.0.0.1:8001`. Before running `npm run dev`, set the following in the repository-root `.env` (preserve the existing Supabase settings):
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
+FRONTEND_ORIGIN=http://127.0.0.1:3000
+```
+
+Start Uvicorn on port 8001 as shown in the backend README. The API fallback remains `http://127.0.0.1:8000` for compatibility only when `NEXT_PUBLIC_API_URL` is absent. The configured value above selects port 8001. Restart the frontend after changing it; Next.js embeds public variables at build time. The backend CORS origins must include the frontend origin. Use Node.js 22 or newer. The Node-only configuration reads the shared root file but exports only `NEXT_PUBLIC_API_URL` to the browser; it never exports Supabase/database secrets or other values from that file. Do not create a frontend `.env.local`. Shell variables take precedence.
 
 For a production preview run `npm run build`, then `npm start`.
 
@@ -30,7 +37,7 @@ For a production preview run `npm run build`, then `npm start`.
 - Internal source previews fetch the role-protected document file as a temporary blob URL. Public pack and selected evidence routes use their share token without a role header. The backend enforces which files the token can access.
 - Pack links use the frontend origin and open in another browser against the same backend. With the default localhost addresses, they work only on the same computer while both servers are running. External access requires reachable frontend/API addresses and appropriate backend CORS configuration.
 - Workspace help → Restore sample records calls the server's demo reset. It works only when the backend enables reset and affects the server demo workspace.
-- The previous browser-only demo data is left untouched and unused. This application is not a certification or legal assurance system.
+- The unused browser-only implementation has been removed. Any older browser-stored data is left untouched and is not imported. This application is not a certification or legal assurance system.
 
 ## Compare production loading with development
 

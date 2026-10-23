@@ -8,7 +8,7 @@ import { customerPortalMessage } from './presentation.mjs';
 import { replaceRequest, saveQuestionReview, loadApproval } from './request-updates.mjs';
 import { apiRequest, apiPreview } from './api-client.mjs';
 import { RecordFields } from './record-fields-form';
-import { activityKey, normaliseActivities, validateActivities, categoryLabel, cleanDecimal, reclassifyActivities } from './record-fields.mjs';
+import { normaliseActivities, validateActivities, categoryLabel, cleanDecimal, reclassifyActivities } from './record-fields.mjs';
 import { approvalKey, declarationKey, questionDraftChanged, createDraftNavigator, warnBeforeUnload } from './draft-state.mjs';
 import { reloadRequestContext, recommendedEvidence, retainEvidenceSelection, packQuestionEvidence, createAndMatchRequest } from './review-recovery.mjs';
 import { UnsavedChangesDialog } from './unsaved-changes-dialog';
@@ -24,7 +24,7 @@ import { createWorkspaceLoader, type WorkspaceSection, type WorkspaceSectionStat
 import { createEvidenceLoader, type SourceState } from './evidence-loading.mjs';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDownToLine, ArrowRight, ArrowUpRight, BarChart3, BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, ClipboardCheck, Clock3, FileCheck2, FileText, FolderOpen, History, Leaf, Link2, LoaderCircle, LockKeyhole, Menu, Plus, RefreshCw, Send, ShieldCheck, Sparkles, Upload, X, Zap, Droplets, Fuel, Recycle, Building2, Users, ExternalLink, Eye, AlertTriangle } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, ArrowUpRight, BarChart3, BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, ClipboardCheck, Clock3, FileText, FolderOpen, History, Leaf, Link2, LoaderCircle, LockKeyhole, Menu, Plus, RefreshCw, Send, ShieldCheck, Sparkles, Upload, X, Zap, Droplets, Fuel, Recycle, Building2, Users, ExternalLink, Eye, AlertTriangle } from 'lucide-react';
 
 
 type Role = 'owner'|'clerk'|'customer';
@@ -267,7 +267,6 @@ export default function Home() {
   const metrics:Metric[]=profile?.metrics||[];
   const readiness=profile?.readiness||{complete:0,total:11,percent:0};
   const confirmedDocs=documents.filter(d=>d.confirmed).length;
-  const pendingDocuments=documents.filter(d=>!d.confirmed);
   const breakdown=readiness.breakdown||{complete:readiness.complete,partial:0,estimated:0,missing:11-readiness.complete};
   const periodLabel=monthLabel(period);
   const companyName=profile?.company?.name||'Lim Carton Manufacturing';

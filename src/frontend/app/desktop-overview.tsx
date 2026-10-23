@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ChevronRight, FileText, Plus, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, FileText, Plus } from 'lucide-react';
 
 import { categoryLabel } from './record-fields.mjs';
 import { recentRequests } from './presentation.mjs';

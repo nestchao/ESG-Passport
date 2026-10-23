@@ -15,6 +15,15 @@ py -3 -m venv .venv
 if (!(Test-Path ../../.env)) { Copy-Item ../../.env.example ../../.env }
 ```
 
+Recommended local addresses are frontend `http://127.0.0.1:3000` and backend `http://127.0.0.1:8001`. Set these entries in the repository-root `.env` before starting the services:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
+FRONTEND_ORIGIN=http://127.0.0.1:3000
+```
+
+The frontend's fallback API address remains port 8000 for compatibility when `NEXT_PUBLIC_API_URL` is absent. The explicit value above selects port 8001; the Uvicorn command must use the same port. Restart Next.js after changing this value.
+
 Edit the repository-root `.env` with your Supabase project URL, server secret/service-role key and Postgres session-pooler connection string. Both the backend and Alembic read this exact file regardless of your working directory. Explicit process environment variables take precedence. There are no separate backend or frontend `.env` files. Do not paste secrets into chat or source code.
 
 For `DATABASE_URL`, use the Supabase dashboard's connection string. The session pooler is useful where direct IPv6 is unavailable (typically port 5432, user `postgres.<project-ref>`); use its exact host and username. A direct database connection also works where supported. Percent-encode special characters in the password. The backend normalizes Postgres URLs to Psycopg 3 and requires TLS by default. SQLite is only available through explicit test dependency injection; configuration rejects it for the running server.
@@ -28,7 +37,7 @@ From `src/backend` after creating the virtual environment:
 .\.venv\Scripts\python.exe -m esg_backend.cli init-storage
 .\.venv\Scripts\python.exe -m esg_backend.cli seed
 .\.venv\Scripts\python.exe -m esg_backend.cli check
-.\.venv\Scripts\python.exe -m uvicorn esg_backend.app:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn esg_backend.app:app --host 127.0.0.1 --port 8001
 ```
 
 API startup never migrates, seeds or creates the bucket. `init-storage` explicitly creates/verifies a private bucket and enforces a maximum 10 MB upload limit. `seed` requires migrated tables, creates six distinct sample PNG originals and never overwrites an existing company. An existing workspace returns immediately; it does not reset activities, declarations, factors, requests or approvals. New seed uploads use immutable UUID paths and are cleaned up on seed failure. If compensation itself fails, inspect the private bucket for orphaned objects before retrying. Database transactions and storage writes are separate services, so interrupted processes can leave orphans.
@@ -43,13 +52,14 @@ The starting company is fictional Lim Carton Industries, Shah Alam, Manufacturin
 
 The flag takes no key argument. Probes use a seeded document path read by the trusted server, verify browser denial for both public and private download routes, and verify REST cannot return application rows. A passing check without this flag does not claim to have run HTTP browser probes. No check prints credentials or driver exception details.
 
-`FRONTEND_ORIGIN` must match the actual local frontend origin, including port; the default is `http://127.0.0.1:3000`. OpenAPI is available at [local API docs](http://127.0.0.1:8000/docs) while the server runs. `ALLOW_SAMPLE_RESET=false` is the default; enable it only when deliberately testing the sample-reset endpoint against a disposable synthetic workspace.
+`FRONTEND_ORIGIN` must match the actual local frontend origin, including port; the default is `http://127.0.0.1:3000`. OpenAPI is available at [local API docs](http://127.0.0.1:8001/docs) while the server runs. `ALLOW_SAMPLE_RESET=false` is the default; enable it only when deliberately testing the sample-reset endpoint against a disposable synthetic workspace.
 
 ## Tests
 
-Tests use injected SQLite and in-memory storage, without network credentials. They do not replace live Supabase security checks. From `src/backend`:
+Tests use injected SQLite and in-memory storage, without Supabase credentials. They do not replace live Supabase security checks. Runtime installation excludes pytest; install development requirements to run tests. From `src/backend`:
 
 ```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pytest tests -q --basetemp=./.pytest-tmp
 ```
 
