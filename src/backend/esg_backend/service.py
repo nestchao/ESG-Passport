@@ -361,6 +361,32 @@ class Workspace:
                 logging.getLogger(__name__).error('Could not clean up an uploaded object after a database failure.')
             raise
 
+    def retry_ocr(self, document_id, body):
+        """Re-read an immutable source without changing reviewed activities.
+
+        The first extraction is kept as provenance, and existing activity
+        revisions stay untouched until a clerk explicitly reviews the new
+        candidates and saves them. Public visitors never run expensive OCR.
+        """
+        if self.settings.sandbox_instance:
+            raise HTTPException(403, 'Live OCR is available in the protected staff workspace only.')
+        self.company(lock=True)
+        doc = self.document(document_id)
+        self.ensure_editable(doc, body.expected_version)
+        if doc.confirmed:
+            raise HTTPException(409, 'Save this confirmed record as an unconfirmed draft before re-running OCR.')
+        from .bill_ocr import extract_upload
+        source = self.storage.download(doc.object_path)
+        doc.extraction = extract_upload(source, doc.mime_type, doc.type, doc.period)
+        doc.version += 1
+        self.log('ocr_retried', doc.id,
+                 'Original document reprocessed; suggestions still require manual review.', doc.period)
+        self.db.flush()
+        # Use the persisted candidate rather than the GET read-only recovery path.
+        result = self.serialize_documents([doc])[0]
+        self.db.commit()
+        return result
+
     def save_activities(self, document_id, body, *, confirmed=None, old_period=None):
         self.company(lock=True)
         doc = self.document(document_id)
