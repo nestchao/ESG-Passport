@@ -171,8 +171,9 @@ export async function proxyBackend(request,segments,config,fetchImpl=fetch){
   if(!nativeOrigin&&(isStaff||site!=='same-origin'))return error('Request origin is not allowed.',403);
  }
  if(!validPath(segments))return error('Invalid backend path.',400);
- if(!isStaff&&request.method==='POST'&&segments.length===1&&segments[0]==='documents')
-  return error('Public sandbox uploads are disabled. Use its preloaded synthetic documents.',403);
+ // Only approved fictional sample images may be uploaded anonymously.
+ // The sandbox backend verifies exact SHA-256, file category and month.
+ const sampleUpload=!isStaff&&request.method==='POST'&&segments.length===1&&segments[0]==='documents';
  const incoming=new URL(request.url),prefix=isStaff?'':'/sandbox';
  const target=`${config.backendUrl}${prefix}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;
  // Explicit allowlist: cookies, authorization and every incoming shared-key header are dropped.
@@ -181,7 +182,8 @@ export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  let body;
  try{if(request.method!=='GET'){
   // Multipart envelope allowance lets a full 10 MiB file reach the backend's file limit.
-  const limit=MAX_PROXY_BYTES+(outgoing.get('content-type')?.startsWith('multipart/form-data')?64*1024:0);
+  const multipart=outgoing.get('content-type')?.startsWith('multipart/form-data');
+  const limit=sampleUpload?512*1024+64*1024:MAX_PROXY_BYTES+(multipart?64*1024:0);
   body=await readBounded(request.body,limit);
  }}catch{return error('Upload exceeds the 10 MiB limit.',413);}
  try{

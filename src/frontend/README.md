@@ -98,8 +98,7 @@ server-side shared key. The backend mounts a separate, generated **in-memory
 SQLite database and synthetic-only in-memory evidence storage**. This code
 path never opens Supabase connections or files and resets on restart; it is
 shared among anonymous visitors. Don't enter personal information: the
-fictional workspace is communal. File uploads are disabled for anonymous
-users, preventing real documents from entering the public sample store.
+fictional workspace is communal. Public uploads accept only three SHA-256-verified synthetic PNG fixtures with a matching category/month and a 512 KB cap. Other uploads are rejected.
 
 The production Postgres/Supabase services and authorized real customer shares
 remain behind the original signed staff session at `/login`; the real backend

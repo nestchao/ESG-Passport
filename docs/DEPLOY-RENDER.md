@@ -91,7 +91,7 @@ in `render.yaml`). Visitors at `/` now open the **full existing ESG Passport
 interface** without credentials. All anonymous API traffic is forwarded to
 `/sandbox` on the FastAPI service, which uses a separate in-memory SQLite
 database and synthetic test-image storage; it never uses the real Supabase
-engine/storage. Anonymous file uploads are refused. The shared sandbox is
+engine/storage. Anonymous uploads are restricted to three SHA-256-verified fictional PNG fixtures and a matching month/category; all other files are rejected. The shared sandbox is
 volatile (restart clears changes) and communal (don't enter confidential
 information). The real database, administrative APIs, private share links
 and optional protected staff login remain session-gated. The backend
