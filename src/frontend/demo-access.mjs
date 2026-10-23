@@ -1,6 +1,8 @@
 // Server-only security helpers. Never import into client components.
 import {createHash,createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
 export const SESSION_COOKIE='esg_demo_session';
+export const LOGIN_CSRF_COOKIE='esg_demo_login_csrf';
+const LOGIN_CSRF_SECONDS=30*60;
 export const SESSION_SECONDS=8*60*60;
 export const MAX_PROXY_BYTES=10*1024*1024;
 export function getDemoConfig(environment=process.env){
@@ -34,6 +36,41 @@ export function verifySession(token,config,now=Math.floor(Date.now()/1000)){
  return timingSafeEqual(Buffer.from(parts[4]),Buffer.from(expected))&&Number(parts[1])<=now&&Number(parts[2])>now&&Number(parts[2])-Number(parts[1])===SESSION_SECONDS;
 }
 export function sessionCookie(token,maxAge=SESSION_SECONDS){return `${SESSION_COOKIE}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;}
+// Double-submit, signed, short-lived token for originless native form POSTs.
+// Browser must present both hidden value from our page and host-scoped cookie.
+export function createLoginCsrf(config,now=Math.floor(Date.now()/1000)){
+ const raw=`v1.${now}.${randomBytes(24).toString('base64url')}`;
+ return `${raw}.${signature('login-csrf:'+raw,config)}`;
+}
+export function verifyLoginCsrf(token,config,now=Math.floor(Date.now()/1000)){
+ if(!config.enabled||typeof token!=='string'||token.length>180)return false;
+ const parts=token.split('.');
+ if(parts.length!==4||parts[0]!=='v1'||!/^[0-9]{1,12}$/.test(parts[1])||
+    !/^[A-Za-z0-9_-]{32}$/.test(parts[2])||!/^[A-Za-z0-9_-]{43}$/.test(parts[3]))return false;
+ const issued=Number(parts[1]);if(issued>now||issued+LOGIN_CSRF_SECONDS<=now)return false;
+ const expected=signature('login-csrf:'+parts.slice(0,3).join('.'),config);
+ return timingSafeEqual(Buffer.from(parts[3]),Buffer.from(expected));
+}
+export function loginCsrfCookie(token,secure=true){return `${LOGIN_CSRF_COOKIE}=${token}; Path=/; Max-Age=${LOGIN_CSRF_SECONDS}; HttpOnly; ${secure?'Secure; ':''}SameSite=Lax`;}
+function namedCookie(request,name){return request.headers.get('cookie')?.split(';').map(part=>part.trim()).find(part=>part.startsWith(`${name}=`))?.slice(name.length+1);}
+export function loginCsrfFromRequest(request){return namedCookie(request,LOGIN_CSRF_COOKIE);}
+function acceptedLoginCsrf(request,config,submitted){
+ const cookie=loginCsrfFromRequest(request);
+ return verifyLoginCsrf(cookie,config)&&typeof submitted==='string'&&
+        submitted.length===cookie.length&&timingSafeEqual(Buffer.from(submitted),Buffer.from(cookie));
+}
+function allowedLoginOrigin(request,config,submitted){
+ if(sameOrigin(request,config))return true;
+ // A foreign/opaque Origin always fails, even with a valid form token.
+ if(request.headers.has('origin'))return false;
+ // Explicit cross-site/sibling-site or background metadata also fails.
+ const site=request.headers.get('sec-fetch-site');
+ if(site==='cross-site'||site==='same-site')return false;
+ const mode=request.headers.get('sec-fetch-mode'),dest=request.headers.get('sec-fetch-dest');
+ if((mode&&mode!=='navigate')||(dest&&dest!=='document'))return false;
+ return acceptedLoginCsrf(request,config,submitted);
+}
+
 function tokenFrom(request){return request.headers.get('cookie')?.split(';').map(part=>part.trim()).find(part=>part.startsWith(`${SESSION_COOKIE}=`))?.slice(SESSION_COOKIE.length+1);}
 const headers={'Cache-Control':'no-store, max-age=0','Pragma':'no-cache','Referrer-Policy':'no-referrer'};
 const error=(message,status)=>Response.json({detail:message},{status,headers});
@@ -92,11 +129,11 @@ async function readBounded(stream,limit){
  const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}return bytes;
 }
 export async function handleLogin(request,config,limiter=loginLimiter){
- if(!sameOrigin(request,config))return error('Request origin is not allowed.',403);
  if(!config.enabled)return redirect('/');
+ let password='',next='/',csrf='';
+ try{const bytes=await readBounded(request.body,4096);const values=new URLSearchParams(new TextDecoder().decode(bytes));password=values.get('password')||'';next=safeReturnTo(values.get('next'));csrf=values.get('csrf_token')||'';}catch{return redirect('/login?error=1');}
+ if(!allowedLoginOrigin(request,config,csrf))return error('Request origin is not allowed.',403);
  if(!limiter(request))return error('Unable to sign in. Try again shortly.',429);
- let password='',next='/';
- try{const bytes=await readBounded(request.body,4096);const values=new URLSearchParams(new TextDecoder().decode(bytes));password=values.get('password')||'';next=safeReturnTo(values.get('next'));}catch{return redirect('/login?error=1');}
  const digest=value=>createHash('sha256').update(value).digest();
  if(!timingSafeEqual(digest(password),digest(config.password)))return redirect(loginLocation(next,true));
  const response=redirect(next);response.headers.set('Set-Cookie',sessionCookie(createSession(config)));return response;

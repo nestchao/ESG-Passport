@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {getDemoConfig,createSession,verifySession,sessionCookie,accessGate,handleLogin,handleLogout,createLoginLimiter,proxyBackend,MAX_PROXY_BYTES} from '../demo-access.mjs';
+import {getDemoConfig,createSession,verifySession,sessionCookie,accessGate,handleLogin,handleLogout,createLoginLimiter,proxyBackend,MAX_PROXY_BYTES,createLoginCsrf,verifyLoginCsrf,loginCsrfCookie,LOGIN_CSRF_COOKIE} from '../demo-access.mjs';
 const env={DEMO_ACCESS_ENABLED:'true',DEMO_PASSWORD:'demo-password-long-enough',DEMO_SESSION_SECRET:'s'.repeat(32),BACKEND_SHARED_KEY:'k'.repeat(32),BACKEND_INTERNAL_URL:'https://backend.example'};
 const cfg=()=>getDemoConfig(env),origin='https://demo.example';
 const req=(path='/',options={})=>new Request(origin+path,options);
@@ -58,6 +58,37 @@ test('originless same-origin form navigation works but cross-site CSRF remains d
   'sec-fetch-site':'same-origin','sec-fetch-mode':'cors','sec-fetch-dest':'empty'
  },body:'{}'}),['documents'],cfg(),async()=>{throw Error('must not call API');});
  assert.equal(denied.status,403);
+});
+test('signed CSRF double-submit permits originless login while rejecting forgery',async()=>{
+ const config=cfg(),csrf=createLoginCsrf(config),tokenCookie=loginCsrfCookie(csrf);
+ assert.match(tokenCookie,/HttpOnly; Secure; SameSite=Lax/);
+ assert.equal(verifyLoginCsrf(csrf,config),true);
+ assert.equal(verifyLoginCsrf(csrf+'x',config),false);
+ assert.equal(verifyLoginCsrf(createLoginCsrf(config,1000),config,1000+1800),false);
+ const form=new URLSearchParams({password:env.DEMO_PASSWORD,csrf_token:csrf});
+ const login=(headers,body=form)=>req('/api/demo/login',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',...headers},body});
+ const cookie=`${LOGIN_CSRF_COOKIE}=${csrf}`;
+ const good=await handleLogin(login({cookie}),config,createLoginLimiter());
+ assert.equal(good.status,303);
+ assert.match(good.headers.get('set-cookie'),/esg_demo_session=/);
+ const malicious=[
+  login({}),
+  login({cookie},new URLSearchParams({password:env.DEMO_PASSWORD})),
+  login({cookie},new URLSearchParams({password:env.DEMO_PASSWORD,csrf_token:createLoginCsrf(config)})),
+  login({cookie,origin:'https://evil.example'}),
+  login({cookie,origin:'null'}),
+  login({cookie,'sec-fetch-site':'cross-site'}),
+  login({cookie,'sec-fetch-site':'same-site'}),
+  login({cookie,'sec-fetch-mode':'cors','sec-fetch-dest':'empty'}),
+ ];
+ for(const request of malicious){
+  const response=await handleLogin(request,config,createLoginLimiter());
+  assert.equal(response.status,403);
+  assert.equal(response.headers.has('set-cookie'),false);
+ }
+ // Supplied correct Origin still works for legacy forms without a CSRF token.
+ const correct=await handleLogin(login({origin},new URLSearchParams({password:env.DEMO_PASSWORD})),config,createLoginLimiter());
+ assert.equal(correct.status,303);
 });
 test('proxy auth headers role upstream errors no redirects or cookies',async()=>{
  let call;const upstream=async(...args)=>{call=args;return new Response('{"detail":"Denied"}',{status:403,headers:{'content-type':'application/json','set-cookie':'upstream=bad','location':'https://secret.example'}});};
