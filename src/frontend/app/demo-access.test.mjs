@@ -71,12 +71,25 @@ test('signed CSRF double-submit permits originless login while rejecting forgery
  const good=await handleLogin(login({cookie}),config,createLoginLimiter());
  assert.equal(good.status,303);
  assert.match(good.headers.get('set-cookie'),/esg_demo_session=/);
+ // Real Edge DevTools capture: Origin is the literal string null (not
+ // missing); all three Fetch Metadata signals prove same-origin navigation.
+ const edgeHeaders={cookie,origin:'null','sec-fetch-site':'same-origin',
+   'sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
+ const edge=await handleLogin(login(edgeHeaders),config,createLoginLimiter());
+ assert.equal(edge.status,303);
+ assert.match(edge.headers.get('set-cookie'),/esg_demo_session=/);
  const malicious=[
   login({}),
   login({cookie},new URLSearchParams({password:env.DEMO_PASSWORD})),
   login({cookie},new URLSearchParams({password:env.DEMO_PASSWORD,csrf_token:createLoginCsrf(config)})),
   login({cookie,origin:'https://evil.example'}),
   login({cookie,origin:'null'}),
+  login({...edgeHeaders,'sec-fetch-site':'cross-site'}),
+  login({...edgeHeaders,'sec-fetch-site':'same-site'}),
+  login({...edgeHeaders,'sec-fetch-mode':'cors'}),
+  login({...edgeHeaders,'sec-fetch-dest':'empty'}),
+  login({...edgeHeaders,origin:'https://evil.example'}),
+  login(edgeHeaders,new URLSearchParams({password:env.DEMO_PASSWORD,csrf_token:'forged'})),
   login({cookie,'sec-fetch-site':'cross-site'}),
   login({cookie,'sec-fetch-site':'same-site'}),
   login({cookie,'sec-fetch-mode':'cors','sec-fetch-dest':'empty'}),
