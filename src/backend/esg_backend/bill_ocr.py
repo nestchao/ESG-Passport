@@ -55,6 +55,53 @@ def _period(lines, month):
     return start, end, False
 
 
+def _labelled_mass(lines, labels):
+    """Read exactly one weight next to an unambiguous weighbridge label."""
+    results = []
+    for index, line in enumerate(lines):
+        if not re.search(labels, line, re.I):
+            continue
+        # Gross and tare labels must never become the accepted net weight.
+        if re.search(r'\b(?:gross|tare|berat\s*kasar|berat\s*kenderaan)\b', line, re.I) and labels == NET_WEIGHT_LABEL:
+            continue
+        own = [(m.group(1).replace(',', ''), UNITS.get(m.group(2).lower()), line)
+               for m in VALUE_UNIT.finditer(line)]
+        if not own and index + 1 < len(lines):
+            next_line = lines[index + 1]
+            # Only a *directly adjacent* numeric line, not another heading.
+            if not re.search(r'[a-z]', next_line, re.I) or re.match(r'^\s*[:\-]?\s*[0-9]', next_line):
+                own = [(m.group(1).replace(',', ''), UNITS.get(m.group(2).lower()), next_line)
+                       for m in VALUE_UNIT.finditer(next_line)]
+        results.extend((quantity, unit, source) for quantity, unit, source in own if unit in ('kg', 't'))
+    return results
+
+
+NET_WEIGHT_LABEL = r'\bnet\b|berat\s*bersih'
+GROSS_WEIGHT_LABEL = r'\bgross\b|berat\s*kasar'
+TARE_WEIGHT_LABEL = r'\btare\b|berat\s*kenderaan'
+
+
+def _waste_transfer_weight(lines, first, last):
+    """Net transfer weight only; never claim disposal, generation or diversion."""
+    from decimal import Decimal
+    net = _labelled_mass(lines, NET_WEIGHT_LABEL)
+    unique = {(quantity, unit) for quantity, unit, _ in net}
+    if len(unique) != 1:
+        return None, ('Multiple different net weights appear on the ticket; enter the verified transfer weight manually.'
+                      if unique else 'No clearly labelled net transfer weight was found.')
+    quantity, unit, source = net[0]
+    gross = _labelled_mass(lines, GROSS_WEIGHT_LABEL)
+    tare = _labelled_mass(lines, TARE_WEIGHT_LABEL)
+    if len({(q, u) for q, u, _ in gross}) == 1 and len({(q, u) for q, u, _ in tare}) == 1:
+        gross_value, gross_unit, _ = gross[0]
+        tare_value, tare_unit, _ = tare[0]
+        if gross_unit == tare_unit == unit and Decimal(gross_value) - Decimal(tare_value) != Decimal(quantity):
+            return None, 'Printed net weight conflicts with gross minus tare; verify the ticket manually.'
+    return {'quantity': quantity, 'unit': unit,
+            'period_start': first.isoformat(), 'period_end': last.isoformat(),
+            'source_reference': 'OCR page 1, NET / BERAT BERSIH: ' + source[:145]}, None
+
+
 def parse_bill_text(lines, category, month):
     """Require unit + relevant label; never guess based on price or arbitrary numbers."""
     notes = ['OCR candidates are unverified. Check the original document before confirming.']
@@ -63,20 +110,41 @@ def parse_bill_text(lines, category, month):
     # Fuel pump slips and waste tickets typically specify a point date, not a
     # multi-day billing period. Use the explicitly printed receipt date only.
     if not period_found and category in ('petrol', 'diesel', 'waste'):
-        for line in clean_lines:
+        for index, line in enumerate(clean_lines):
             if re.search(r'^\s*(?:date|tarikh)\s*:', line, re.I):
                 dates = [_date(value) for value in DATE_PATTERN.findall(line)]
                 if dates and dates[0]:
                     first = last = dates[0]
                     period_found = True
                     break
+            # Thermal weighbridge slips sometimes print their sole date on
+            # the line immediately after the ticket identifier. Do not scan
+            # unrelated free-standing dates throughout the document.
+            if (category == 'waste' and re.search(r'^\s*ticket\s*:', line, re.I)
+                    and index + 1 < len(clean_lines)
+                    and DATE_PATTERN.fullmatch(clean_lines[index + 1])):
+                parsed = _date(clean_lines[index + 1])
+                if parsed:
+                    first = last = parsed
+                    period_found = True
+                    break
     if not period_found:
         notes.append('Billing-period dates were not reliably identified; the selected reporting month is a placeholder.')
     elif first.strftime('%Y-%m') != month or last.strftime('%Y-%m') != month:
-        notes.append('Extracted billing dates differ from the selected reporting month; resolve before confirming.')
+        notes.append('Transfer ticket date differs from the selected reporting month; change the record reporting month before confirming.'
+                     if category == 'waste' else
+                     'Extracted billing dates differ from the selected reporting month; resolve before confirming.')
     categories = ('waste_generated', 'waste_diverted', 'waste_disposed') if category == 'waste' else (category,)
+    # Weighbridge/transfer documentation describes movement, not verified
+    # treatment or generation. Even a destination and mass on the SAME LINE
+    # ("RECYCLING 4,850 kg") must not automatically become waste_diverted.
+    is_transfer_ticket = category == 'waste' and any(re.search(
+        r'weighbridge|timbang|\bgross\b|\btare\b|\bnet\s*weight\b|berat\s*bersih',
+        line, re.I) for line in clean_lines)
     activities = []
     for kind in categories:
+        if is_transfer_ticket:
+            continue
         candidates = []
         for index, line in enumerate(clean_lines):
             # OCR often separates a usage heading from the following number.
@@ -129,15 +197,27 @@ def parse_bill_text(lines, category, month):
             notes.append(f'{kind}: multiple different quantities found; left blank for manual entry.')
         else:
             notes.append(f'{kind}: no clearly labelled quantity and unit found; enter manually.')
+    transfer_candidate = None
     if category == 'waste' and not activities:
-        notes.append('Transfer weights and declared destinations do not prove waste generated, diverted, or disposed; enter only the verified category and net quantity.')
+        transfer_candidate, transfer_warning = _waste_transfer_weight(clean_lines, first, last)
+        if transfer_warning:
+            notes.append(transfer_warning)
+        if transfer_candidate:
+            # The exact mass was found; category is deliberately unresolved.
+            # Three redundant per-category "no quantity" messages otherwise
+            # make this look like OCR failed completely.
+            notes = [note for note in notes if not re.match(r'^waste_(?:generated|diverted|disposed): no clearly labelled', note)]
+            notes.append('Detected net transfer weight ' + transfer_candidate['quantity'] + ' ' + transfer_candidate['unit'] + '. You must choose a supported ESG waste category after checking additional evidence.')
+        notes.append('Transfer weights and declared destinations do not prove waste generated, diverted, or disposed; select a category only with supporting evidence.')
     document_date = None
     for line in clean_lines:
-        if re.search(r'\b(?:invoice date|bill date|issued on|tarikh bil)\b', line, re.I):
+        if re.search(r'\b(?:invoice date|bill date|issued on|tarikh\s*bil|tarikh\s*:|date\s*:)\b', line, re.I) or re.match(r'^\s*(?:date|tarikh)\s*:', line, re.I):
             dates = [_date(text) for text in DATE_PATTERN.findall(line)]
             document_date = next((d.isoformat() for d in dates if d), None)
             if document_date:
                 break
+    if document_date is None and category in ('waste', 'petrol', 'diesel') and period_found and first == last:
+        document_date = first.isoformat()
     supplier = None
     for line in clean_lines[:4]:
         if re.search(r'\b(?:invoice|billing period|bill date|account no|tax invoice|receipt|statement)\b', line, re.I):
@@ -147,8 +227,9 @@ def parse_bill_text(lines, category, month):
             break
     return {'supplier_name': supplier, 'document_date': document_date,
             'period_start': first.isoformat(), 'period_end': last.isoformat(),
-            'activities': activities, 'uncertainty_notes': notes,
-            'ocr_status': 'candidate_found' if activities else 'manual_entry_required',
+            'activities': activities, 'waste_transfer_candidate': transfer_candidate,
+            'uncertainty_notes': notes,
+            'ocr_status': 'candidate_found' if activities or transfer_candidate else 'manual_entry_required',
             'ocr_engine': 'RapidOCR (offline)'}
 
 

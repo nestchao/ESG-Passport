@@ -27,3 +27,14 @@ test('overview advances based on documents and names the pending record type',()
 
 test('validation enforces valid allocation month and strict estimated flag',()=>{assert.ok(helpers.validateActivities([{...base,allocated_period:''}],'water','2026-09')['activities.0.allocated_period']);assert.ok(helpers.validateActivities([{...base,estimated:'false'}],'water','2026-09')['activities.0.estimated']);assert.ok(helpers.validateActivities([{...base,period_start:'2026-09-31'}],'water','2026-09')['activities.0.period_start']);for(const quantity of ['0','1e3','0.000000000001','999999999999999999.999999999999'])assert.deepEqual(helpers.validateActivities([{...base,quantity}],'water','2026-09'),{},quantity);});
 
+
+test('waste net weight prefill leaves ESG classification unselected and enforces source month',()=>{
+ const document={type:'waste',extraction:{waste_transfer_candidate:{quantity:'4850',unit:'kg',period_start:'2026-03-29',period_end:'2026-03-29',source_reference:'OCR net 4,850kg'}}};
+ const rows=helpers.unclassifiedWasteTransferRows(document);assert.equal(rows.length,1);
+ assert.equal(rows[0].category,'');assert.equal(rows[0].quantity,'4850');assert.equal(rows[0].unit,'kg');
+ assert.equal(rows[0].period_start,'2026-03-29');assert.equal(rows[0].period_end,'2026-03-29');
+ assert.ok(helpers.validateActivities(rows,'waste','2026-03')['activities.0.category']);
+ assert.ok(helpers.validateActivities([{...rows[0],category:'waste_generated'}],'waste','2026-05')['activities.0.period_start']);
+ assert.deepEqual(helpers.unclassifiedWasteTransferRows({type:'water',extraction:document.extraction}),[]);
+ assert.deepEqual(helpers.unclassifiedWasteTransferRows({type:'waste',extraction:{}}),[]);
+});

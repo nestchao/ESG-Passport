@@ -7,3 +7,5 @@ export function activityKey(rows:Record<string,any>[]):string;
 export function validateActivities(rows:Record<string,any>[],documentType:string,period:string):Record<string,string>;
 
 export function reclassifyActivities(rows:Record<string,any>[],type:string):Record<string,any>[];
+
+export function unclassifiedWasteTransferRows(document:Record<string,any>):Record<string,any>[];

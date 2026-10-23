@@ -151,7 +151,7 @@ class Workspace:
                 from .bill_ocr import extract_upload
                 content = self.storage.download(doc.object_path)
                 recovered = extract_upload(content, doc.mime_type, doc.type, doc.period)
-                if recovered.get('activities'):
+                if recovered.get('activities') or recovered.get('waste_transfer_candidate'):
                     recovered['uncertainty_notes'].append(
                         'OCR retried for an existing record. Correct and confirm the values; the original extraction is retained.')
                     result['extraction'] = recovered

@@ -95,3 +95,17 @@ the record. Use Archive to retain historical/audited evidence.
 
 For this prototype the Owner role is simulated. Real-world permanent deletion
 requires production identity and retention-policy controls before rollout.
+
+## Waste weighbridge OCR (unclassified transfer weight)
+
+A waste transfer/weighbridge ticket can include a NET / BERAT BERSIH weight
+without proving it is waste **generated**, **diverted** or **disposed**.
+Offline OCR stores a `waste_transfer_candidate` with net mass, unit, point
+date and source line while leaving the ESG waste activity category blank. The
+existing Records editor pre-fills that unclassified quantity for human review.
+The user must select the applicable category using additional evidence, and
+the record reporting month must match the source date before confirmation.
+GROSS and TARE are not used as the reported quantity; where all three weights
+are readable the net amount is checked against gross-minus-tare. Original
+documents and first-pass OCR are retained. Existing unconfirmed records with
+previously failed OCR can be reopened for read-only candidate recovery.

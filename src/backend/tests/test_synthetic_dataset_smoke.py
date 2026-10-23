@@ -37,8 +37,14 @@ def test_all_synthetic_annotations_are_conservatively_parsed():
         target = activity_target(label)
         seen[label['category']] += 1
         if label['category'] == 'waste':
-            # Waste transfer is NOT synonymous with disposal or recovery.
+            # Net mass is OCR-readable, but does NOT establish disposal/recovery.
             assert result['activities'] == [], path.name
+            transfer=result['waste_transfer_candidate']
+            assert transfer is not None, path.name
+            assert Decimal(transfer['quantity']) == Decimal(target['value']), path.name
+            assert transfer['unit'] == target['unit'], path.name
+            assert transfer['period_start'] == target['period']['start'], path.name
+            assert transfer['period_end'] == target['period']['end'], path.name
             assert 'Transfer weights' in ' '.join(result['uncertainty_notes']), path.name
         else:
             assert len(result['activities']) == 1, path.name
@@ -64,7 +70,10 @@ def test_photographed_synthetic_bills_never_invent_values(name, kind):
     expected = activity_target(label)
     if kind == 'waste':
         assert result['activities'] == []
-        assert result['ocr_status'] == 'manual_entry_required'
+        assert result['ocr_status'] == 'candidate_found'
+        assert result['waste_transfer_candidate']['quantity'] == expected['value']
+        assert result['waste_transfer_candidate']['period_start'] == expected['period']['start']
+        assert result['waste_transfer_candidate']['period_end'] == expected['period']['end']
     else:
         assert len(result['activities']) == 1, (name, result)
         candidate = result['activities'][0]

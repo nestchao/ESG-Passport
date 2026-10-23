@@ -11,7 +11,7 @@ export function RecordFields({documentType,rows,onChange,errors,disabled}:Props)
  const key=(field:string)=>`activities.${index}.${field}`;
  const props=(field:string)=>({id:`${prefix}-${index}-${field}`,'data-field':key(field),'aria-invalid':errors[key(field)]?true:undefined,'aria-describedby':errors[key(field)]?`${prefix}-${index}-${field}-error`:undefined,disabled});
  const error=(field:string)=>errors[key(field)]?<span className="field-error danger" id={`${prefix}-${index}-${field}-error`}>{errors[key(field)]}</span>:null;
- const units=allowedUnits(row.category);const crossMonth=row.period_start?.slice(0,7)!==row.period_end?.slice(0,7);
+ const units=row.category?allowedUnits(row.category):documentType==='waste'?['kg','t']:allowedUnits(row.category);const crossMonth=row.period_start?.slice(0,7)!==row.period_end?.slice(0,7);
  return <div className="activity-editor" key={index}><div className="flex-between"><strong>Quantity {index+1}</strong>{rows.length>1&&<button type="button" disabled={disabled} className="text-button danger" onClick={()=>onChange(rows.filter((_,i)=>i!==index))}>Remove</button>}</div>
  <label>Category<select {...props('category')} value={row.category||''} onChange={event=>{const category=event.target.value;onChange(rows.map((item,i)=>i===index?{...item,category,unit:allowedUnits(category).includes(item.unit)?item.unit:allowedUnits(category)[0]||''}:item));}}>{!categories.includes(row.category)&&<option value={row.category||''}>Choose category</option>}{categories.map(category=><option key={category} value={category}>{categoryLabel(category)}</option>)}</select>{error('category')}</label>
  <p className="field-note">Source: {row.source_reference||'Page 1; manually checked'}{row.uncertainty?` · ${row.uncertainty}`:''}</p>

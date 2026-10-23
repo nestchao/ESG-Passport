@@ -9,7 +9,7 @@ import { customerPortalMessage } from './presentation.mjs';
 import { replaceRequest, saveQuestionReview, loadApproval } from './request-updates.mjs';
 import { apiRequest, apiPreview } from './api-client.mjs';
 import { RecordFields } from './record-fields-form';
-import { normaliseActivities, validateActivities, categoryLabel, cleanDecimal, reclassifyActivities } from './record-fields.mjs';
+import { normaliseActivities, validateActivities, categoryLabel, cleanDecimal, reclassifyActivities, unclassifiedWasteTransferRows } from './record-fields.mjs';
 import { approvalKey, declarationKey, questionDraftChanged, createDraftNavigator, warnBeforeUnload } from './draft-state.mjs';
 import { reloadRequestContext, recommendedEvidence, retainEvidenceSelection, packQuestionEvidence, createAndMatchRequest } from './review-recovery.mjs';
 import { UnsavedChangesDialog } from './unsaved-changes-dialog';
@@ -115,7 +115,8 @@ export default function Home() {
   evidenceHandlers.current={apiAction:(id:string)=>apiRequest(`/documents/${encodeURIComponent(id)}`,{},role),preview:(id:string)=>apiPreview(id,role),onDetails:(d:Json,context:any)=>{
     if(context.role!==activeRole.current||context.period!==activeMonth.current)return;
     const extraction=d.extraction||{};
-    const sourceRows=d.activities?.length?d.activities:extraction.activities||extraction.quantities||[];
+    const extractedRows=extraction.activities||extraction.quantities||[];
+    const sourceRows=d.activities?.length?d.activities:extractedRows.length?extractedRows:unclassifiedWasteTransferRows(d);
     const month=d.period||selectedMonth;
     const bounds=monthBounds(month);
     const rows=normaliseActivities(sourceRows.length?sourceRows:[{category:d.type==='waste'?'waste_generated':d.type||'electricity',quantity:'',unit:d.type==='water'?'m3':d.type==='electricity'?'kWh':d.type==='waste'?'kg':'L',period_start:bounds.start,period_end:bounds.end,estimated:false,assumptions:''}]);
@@ -354,7 +355,7 @@ export default function Home() {
     if(!pendingFile)throw Error('Choose a supporting document first.');
     const data=new FormData();data.append('file',pendingFile);data.append('type',sourceType);data.append('period',selectedMonth);
     const d=await apiAction('/documents',{method:'POST',body:data});setPendingFile(null);setSourceType('electricity');await refresh();
-    await loadDocument(d,null);setNotice(d.extraction?.activities?.length?'OCR candidates pre-filled. Check every value against the original, then confirm.':'Record stored. OCR could not reliably extract quantities; enter them from the source and confirm.');
+    await loadDocument(d,null);setNotice(d.extraction?.waste_transfer_candidate?'Net transfer weight detected. Choose the correct ESG waste category using supporting evidence and match the reporting month before confirming.':d.extraction?.activities?.length?'OCR candidates pre-filled. Check every value against the original, then confirm.':'Record stored. OCR could not reliably extract quantities; enter them from the source and confirm.');
   });}
   function requestNotices(){return detail&&<RequestRecoveryNotice request={detail} shares={shares} role={role} conflict={requestConflict} busy={!!busy} onReload={reloadLatestAnswers} onOpenPack={showPack}/>;}
   function sourceLink(id:string){const doc=documents.find(d=>String(d.id)===String(id));return <button key={id} className="evidence-link" onClick={()=>openDocument(doc||{id})}><FileText size={14}/>{doc?.name||id}<ArrowUpRight size={12}/></button>;}
@@ -427,5 +428,5 @@ function Question({q,period,index,role,busy,onSave,onEvidence,draft,onDraftChang
 
 function ExtractionMetadata({extraction}:{extraction?:Json|null}) {
   if(!extraction)return <p className="field-note">Enter quantities from the source document.</p>;
-  return <div className="extraction-metadata"><dl><div><dt>Supplier</dt><dd>{extraction.supplier_name||'Missing'}</dd></div><div><dt>Document date</dt><dd>{extraction.document_date||'Missing'}</dd></div><div><dt>Reporting period</dt><dd>{extraction.period_start||'Missing'} to {extraction.period_end||'Missing'}</dd></div></dl>{(extraction.uncertainty_notes||[]).map((note:string,i:number)=><p key={i}><AlertTriangle size={12}/>{note}</p>)}</div>;
+  return <div className="extraction-metadata"><dl><div><dt>Supplier</dt><dd>{extraction.supplier_name||'Missing'}</dd></div><div><dt>Document date</dt><dd>{extraction.document_date||'Missing'}</dd></div><div><dt>Reporting period</dt><dd>{extraction.period_start||'Missing'} to {extraction.period_end||'Missing'}</dd></div>{extraction.waste_transfer_candidate&&<div><dt>Detected net weight (unclassified)</dt><dd>{extraction.waste_transfer_candidate.quantity} {extraction.waste_transfer_candidate.unit}</dd></div>}</dl>{(extraction.uncertainty_notes||[]).map((note:string,i:number)=><p key={i}><AlertTriangle size={12}/>{note}</p>)}</div>;
 }
