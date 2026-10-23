@@ -130,3 +130,22 @@ SHA-256-verified sample PNGs, using their precomputed fixture extraction.
 The anonymous access gate allows only `/ocr` and the bundled PDF worker
 asset required for scanning, in addition to previously approved public
 paths; protected real backend and customer-sharing routes are unchanged.
+
+## Live Gemini OCR + Supabase staff workspace (`/live`)
+
+The hosted `/live` route is a separate, **signed-session-only** entry into the
+real ESG Passport. Visitors without a signed staff session are redirected to
+`/login?next=%2Flive`; authenticated staff access the existing app UI.
+Authenticated `/api/backend/*` proxy requests use the protected main backend
+(Supabase Postgres + private Storage), **not** the anonymous `/sandbox` SQLite
+instance. The backend uses Gemini OCR for protected uploads when its server-side
+`ESG_OCR_MODE` enables it. Grafilab is an optional provider fallback.
+The OCR engine/model appear in the document review metadata. All extraction
+candidates remain unverified until manually reviewed and confirmed.
+
+The public `/` experience remains a disposable synthetic sandbox with no access
+to the real Supabase workspace. Do not remove the signed-session requirement,
+store API keys in `NEXT_PUBLIC_*`, or route anonymous requests to the real
+backend: the application uses simulated staff roles and is **not** a secure
+public multi-tenant SaaS product. Only authorized staff should know the demo
+password; use genuine identity and row-level authorization for production.

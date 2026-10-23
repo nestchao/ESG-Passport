@@ -44,6 +44,28 @@ test('synthetic public demo and only its selected images open without session',(
  assert.equal(accessGate(req('/',{method:'POST'}),c).status,303);
  assert.equal(accessGate(req('/'),getDemoConfig({})),null);
 });
+test('protected /live site uses real backend only after valid staff sign-in',async()=>{
+ const sandbox=getDemoConfig({...env,PUBLIC_WORKSPACE_ENABLED:'true'});
+ assert.equal(accessGate(req('/'),sandbox),null);
+ const anonymous=accessGate(req('/live'),sandbox);
+ assert.equal(anonymous.status,303);
+ assert.equal(anonymous.headers.get('location'),origin+'/login?next=%2Flive');
+ const signed=req('/live',{headers:{cookie:cookie()}});
+ assert.equal(accessGate(signed,sandbox),null);
+ let target;
+ const response=await proxyBackend(authed('/profile',{headers:{cookie:cookie()}}),['profile'],sandbox,async(url)=>{
+  target=url;
+  return Response.json({source:'supabase-backend'});
+ });
+ assert.equal(response.status,200);
+ assert.equal(target,'https://backend.example/profile');
+ assert.equal((await response.json()).source,'supabase-backend');
+ assert.equal((await proxyBackend(req('/api/backend/profile'),['profile'],sandbox,async(url)=>{
+  assert.equal(url,'https://backend.example/sandbox/profile');
+  return Response.json({source:'synthetic'});
+ })).status,200);
+});
+
 test('password-free full ESG workspace is routed only to synthetic backend',async()=>{
  const sandbox=getDemoConfig({...env,PUBLIC_WORKSPACE_ENABLED:'true'});
  assert.equal(sandbox.publicWorkspaceEnabled,true);
