@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "catalogue_version",
+    "question_id",
+    "original_text",
+    "method",
+    "mapping_status",
+    "codes",
+    "candidate_codes",
+    "requirements",
+    "issues",
+    "requires_human_review"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "catalogue_version": {
+      "const": "sedg-v2-five-basic-0.2.0"
+    },
+    "question_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "original_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "enum": [
+        "rules",
+        "llm_proposed"
+      ]
+    },
+    "mapping_status": {
+      "enum": [
+        "mapped",
+        "ambiguous",
+        "needs_review",
+        "outside_scope",
+        "partially_mapped"
+      ]
+    },
+    "codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "candidate_codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "requirement_id",
+          "sedg_code",
+          "level",
+          "metric_id",
+          "requested_unit",
+          "catalogue_units",
+          "target_period",
+          "boundary",
+          "required_breakdowns",
+          "calculation_inputs_required",
+          "requires_calculation_if_activity_only",
+          "status",
+          "missing_inputs",
+          "question_span",
+          "rule_ids"
+        ],
+        "properties": {
+          "requirement_id": {
+            "type": "string"
+          },
+          "sedg_code": {
+            "type": "string"
+          },
+          "level": {
+            "enum": [
+              "basic"
+            ]
+          },
+          "metric_id": {
+            "type": "string"
+          },
+          "requested_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "catalogue_units": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "target_period": {
+            "type": "object",
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "boundary": {
+            "type": "object",
+            "required": [
+              "organisation_id",
+              "site_id",
+              "consolidation_method",
+              "site_required",
+              "question_boundary_text"
+            ],
+            "properties": {
+              "organisation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "site_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "consolidation_method": {
+                "enum": [
+                  "equity_share",
+                  "operational_control",
+                  "financial_control",
+                  null
+                ]
+              },
+              "site_required": {
+                "type": "boolean"
+              },
+              "subsidiary_required": {
+                "type": "boolean"
+              },
+              "question_boundary_text": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "required_breakdowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "calculation_inputs_required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requires_calculation_if_activity_only": {
+            "type": "boolean"
+          },
+          "status": {
+            "const": "mapped_requirement"
+          },
+          "missing_inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "question_span": {
+            "type": "object",
+            "required": [
+              "start",
+              "end",
+              "text"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "rule_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_human_review": {
+      "const": true
+    }
+  },
+  "additionalProperties": false
+}

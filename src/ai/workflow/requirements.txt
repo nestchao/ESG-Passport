@@ -1,0 +1,2 @@
+# No OCR/provider SDK is required by the offline workflow core.
+jsonschema==4.26.0
