@@ -1,5 +1,5 @@
 """Environment configuration. Secrets remain on the Python server."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -32,6 +32,13 @@ class Settings:
     render_hosted: bool = False
     public_workspace_enabled: bool = False
     sandbox_instance: bool = False
+    esg_ocr_mode: str = 'offline'
+    esg_compare_models: tuple[str, ...] = ()
+    gemini_api_key: str = field(default='', repr=False)
+    gemini_ocr_model: str = 'gemini-2.5-flash-lite'
+    grafilab_api_key: str = field(default='', repr=False)
+    grafilab_base_url: str = 'https://llm.grafilab.ai/v1'
+    grafilab_ocr_model: str = 'grafilab/qwen3.5-397b-a17b'
 
     @classmethod
     def from_env(cls) -> 'Settings':
@@ -47,6 +54,13 @@ class Settings:
             backend_shared_key=os.getenv('BACKEND_SHARED_KEY', '').strip(),
             render_hosted=os.getenv('RENDER', '').strip().lower() == 'true',
             public_workspace_enabled=os.getenv('PUBLIC_WORKSPACE_ENABLED', '').strip().lower() == 'true',
+            esg_ocr_mode=os.getenv('ESG_OCR_MODE', 'offline').strip().lower(),
+            esg_compare_models=tuple(model.strip() for model in os.getenv('ESG_COMPARE_MODELS', '').split(',') if model.strip()),
+            gemini_api_key=os.getenv('GEMINI_API_KEY', '').strip(),
+            gemini_ocr_model=os.getenv('GEMINI_OCR_MODEL', 'gemini-2.5-flash-lite').strip(),
+            grafilab_api_key=os.getenv('GRAFILAB_API_KEY', '').strip(),
+            grafilab_base_url=os.getenv('GRAFILAB_BASE_URL', 'https://llm.grafilab.ai/v1').strip(),
+            grafilab_ocr_model=os.getenv('GRAFILAB_OCR_MODEL', 'grafilab/qwen3.5-397b-a17b').strip(),
         )
 
     def validate_demo_access(self) -> None:
