@@ -100,15 +100,12 @@ const loginLocation=(next,error=false)=>'/login'+(error?'?error=1':'')+(next!=='
 export function accessGate(request,config){
  if(!config.enabled)return null;
  const url=new URL(request.url),path=url.pathname;
- // Public, completely synthetic sandbox. Explicit exact-path allowlist only;
- // NEVER expose /api/backend/* or real workspace pages through this gate.
- if(config.publicWorkspaceEnabled&&['GET','HEAD'].includes(request.method)&&path==='/demo')return redirect(new URL('/',config.publicOrigin||url.origin).href);
+ // The public /demo and /ocr screens never use the protected backend.
+ // The real workspace at / requires a signed staff session.
  if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||path==='/ocr'||path==='/ocr-assets/pdf.worker.min.mjs'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
- if(config.publicWorkspaceEnabled&&(path==='/'&&['GET','HEAD'].includes(request.method)||path.startsWith('/api/backend/')&&['GET','POST','PUT','DELETE'].includes(request.method)))return null;
  if(path==='/login'||path==='/api/demo/login'||path==='/api/demo/logout'||path.startsWith('/_next/')||path==='/favicon.ico')return null;
  if(verifySession(tokenFrom(request),config))return null;
  const trustedOrigin=config.publicOrigin||url.origin;
- if(request.method==='GET'&&path==='/'&&url.search==='')return redirect(new URL('/demo',trustedOrigin).href);
  // Next.js Proxy requires absolute Location URLs for middleware redirects.
  const loginUrl=new URL(loginLocation(safeReturnTo(path+url.search)),trustedOrigin);
  return path.startsWith('/api/')?error('Demo sign-in required.',401):redirect(loginUrl.href);
@@ -160,22 +157,19 @@ function validPath(segments){return Array.isArray(segments)&&segments.length>0&&
 export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  if(!config.enabled)return error('Demo proxy is disabled.',404);
  const isStaff=verifySession(tokenFrom(request),config);
- if(!isStaff&&!config.publicWorkspaceEnabled)return error('Demo sign-in required.',401);
+ // No anonymous application API calls, even when the legacy public
+ // workspace flag remains set on an existing Render Blueprint.
+ if(!isStaff)return error('Demo sign-in required.',401);
  if(!['GET','POST','PUT','DELETE'].includes(request.method))return error('Method not allowed.',405);
  if(request.method!=='GET'){
   const nativeOrigin=sameOrigin(request,config);
-  const site=request.headers.get('sec-fetch-site');
-  // Some Edge navigations send Origin: null. For the synthetic-only sandbox,
-  // accept native same-origin browser writes; real Supabase writes still require
-  // the original exact Origin check and an authenticated staff session.
-  if(!nativeOrigin&&(isStaff||site!=='same-origin'))return error('Request origin is not allowed.',403);
+
+  // Protected Supabase writes require an exact trusted Origin.
+  if(!nativeOrigin)return error('Request origin is not allowed.',403);
  }
  if(!validPath(segments))return error('Invalid backend path.',400);
- // Only approved fictional sample images may be uploaded anonymously.
- // The sandbox backend verifies exact SHA-256, file category and month.
- const sampleUpload=!isStaff&&request.method==='POST'&&segments.length===1&&segments[0]==='documents';
- const incoming=new URL(request.url),prefix=isStaff?'':'/sandbox';
- const target=`${config.backendUrl}${prefix}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;
+ const incoming=new URL(request.url);
+ const target=`${config.backendUrl}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;
  // Explicit allowlist: cookies, authorization and every incoming shared-key header are dropped.
  const outgoing=new Headers();for(const name of ['content-type','accept','x-demo-role']){const value=request.headers.get(name);if(value)outgoing.set(name,value);}
  outgoing.set('X-Demo-Backend-Key',config.backendKey);
@@ -183,7 +177,7 @@ export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  try{if(request.method!=='GET'){
   // Multipart envelope allowance lets a full 10 MiB file reach the backend's file limit.
   const multipart=outgoing.get('content-type')?.startsWith('multipart/form-data');
-  const limit=sampleUpload?512*1024+64*1024:MAX_PROXY_BYTES+(multipart?64*1024:0);
+  const limit=MAX_PROXY_BYTES+(multipart?64*1024:0);
   body=await readBounded(request.body,limit);
  }}catch{return error('Upload exceeds the 10 MiB limit.',413);}
  try{

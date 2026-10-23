@@ -5,8 +5,9 @@ envVarGroups:
     envVars:
       - key: DEMO_ACCESS_ENABLED
         value: "true"
+      # Disable legacy public SQLite sandbox; the homepage now requires staff login.
       - key: PUBLIC_WORKSPACE_ENABLED
-        value: "true"
+        value: "false"
       - key: BACKEND_SHARED_KEY
         generateValue: true
 

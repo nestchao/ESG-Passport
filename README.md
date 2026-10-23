@@ -22,8 +22,8 @@
 </p>
 
 <p align="center">
-  <a href="https://esg-passport-web.onrender.com/">Public demo</a> ·
-  <a href="https://esg-passport-web.onrender.com/live">Protected live workspace</a> ·
+  <a href="https://esg-passport-web.onrender.com/">Protected ESG Passport</a> ·
+  <a href="https://esg-passport-web.onrender.com/demo">Public fictional demo</a> ·
   <a href="https://esg-passport-web.onrender.com/ocr">Browser OCR</a> ·
   <a href="docs/DEPLOY-RENDER.md">Deployment guide</a>
 </p>
@@ -68,11 +68,11 @@ flowchart LR
 
 | Route | What you can try | Where the data lives |
 | --- | --- | --- |
-| **[Public ESG Passport](https://esg-passport-web.onrender.com/)** (`/`) | Explore the full interface and review approved fictional sample bills without a password. | Shared, **temporary in-memory SQLite and file storage**. No Supabase access or external AI OCR. |
-| **[Protected live workspace](https://esg-passport-web.onrender.com/live)** (`/live`) | Sign in as authorized demo staff; upload documents for configured Gemini / Grafilab OCR and save reviewed records. | Server-side **Supabase PostgreSQL** and **private Supabase Storage**. |
+| **[Protected ESG Passport](https://esg-passport-web.onrender.com/)** (`/`) | Sign in as authorized staff; review Supabase records and upload documents using configured Gemini / Grafilab OCR. | Server-side **Supabase PostgreSQL** and **private Supabase Storage**. |
+| **[Public fictional demo](https://esg-passport-web.onrender.com/demo)** (`/demo`) | Explore guided sample scenarios without a password or backend account. | Browser-only fictional state; **no Supabase access** or remote AI requests. |
 | **[Browser OCR scanner](https://esg-passport-web.onrender.com/ocr)** (`/ocr`) | Extract and review text from images or PDFs locally in your browser; export a JSON review. | Browser only; **does not create a Supabase record**. |
 
-The protected live workspace uses the existing demo-password session. The owner/clerk role switch is **simulated**, not a real multi-user identity system. Only authorized testers should use this route.
+The homepage `/` and optional `/live` use the existing demo-password session. The owner/clerk role switch is **simulated**, not a real multi-user identity system. Only authorized testers should access Supabase.
 
 ### Example evidence
 
@@ -104,7 +104,7 @@ Protected staff uploads go to FastAPI. When external OCR is enabled, the backend
 | `compare` | Run the first two Gemini models and flag differences between reviewable candidates. |
 | `compare_grafilab` | Compare Gemini and Grafilab candidates. |
 
-Provider calls depend on valid server-side credentials, account access, configured model IDs and quotas. The public sandbox deliberately uses **precomputed fictional OCR results**; it does not use these remote modes. The separate `/ocr` route uses **Tesseract.js / PDF.js in the browser**, not Gemini.
+Provider calls depend on valid server-side credentials, model permissions and quotas. The public `/demo` experience is **entirely fictional and browser-only**; it does not use remote OCR or Supabase. The separate `/ocr` route uses **Tesseract.js / PDF.js in the browser**, not Gemini.
 
 ### Customer questionnaire mapping
 
@@ -117,9 +117,9 @@ The offline workflow focuses on the supported basic environmental disclosures **
 ```mermaid
 flowchart TB
     Browser["Next.js + Tailwind CSS frontend"] --> Gate{"Route and session"}
-    Gate -->|"Public /"| Sandbox["Synthetic FastAPI sandbox"]
-    Sandbox --> Memory[("In-memory SQLite + sample storage")]
-    Gate -->|"Protected /live"| Proxy["Authenticated Next.js API proxy"]
+    Gate -->|"Public /demo"| Demo["Fictional browser-only demo"]
+
+    Gate -->|"Signed-in / or /live"| Proxy["Authenticated Next.js API proxy"]
     Proxy --> API["FastAPI backend"]
     API --> DB[("Supabase PostgreSQL")]
     API --> Files[("Private Supabase Storage")]
@@ -141,9 +141,9 @@ flowchart TB
 | Component | Status / limitation |
 | --- | --- |
 | Monthly record editing, review, versioned history and owner approval | Implemented application behaviour; calculations use explicitly confirmed data. |
-| Supabase persistence | Used in the **protected** backend. The public sandbox never connects to it. |
+| Supabase persistence | Used by the **signed-in** homepage and `/live`; the public `/demo` never connects to it. |
 | Gemini / Grafilab OCR | Real HTTP adapters in the protected backend when configured; availability and accuracy depend on the external providers. |
-| Public demo OCR | Precomputed recognition of a small, approved synthetic fixture set—not a live AI request. |
+| Public demo OCR | Fixed fictional examples—not a live AI request or backend document upload. |
 | Browser OCR scanner | Real client-side OCR, but its JSON export is **not** automatically imported into the ESG workspace. |
 | Customer request mapping | Deterministic, bilingual SEDG rules; **not** a generative AI service. |
 | Owner / clerk / customer identities | Simulated roles, guarded by a shared staff demo login in hosted mode; not production authentication. |

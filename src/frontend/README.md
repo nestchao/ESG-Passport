@@ -66,11 +66,10 @@ Follow [the Render setup guide](../../docs/DEPLOY-RENDER.md). Hosted mode uses a
 
 ## Password-free synthetic public demo
 
-With protected demo access enabled on Render, unauthenticated visitors opening
-`/` without a query are redirected to **`/demo`**, a separate Next.js client
-page. Visitors can also open `/demo` directly without a password, or choose
-"Open the public synthetic demo" from the `/login` page. Protected staff
-continue using `/login` to access the existing, real workspace.
+On Render, visiting `/` without a signed staff session redirects to **`/login`**.
+Signing in opens the real Supabase-backed ESG Passport at `/` (the existing
+`/live` alias also works). To explore without a password, open the browser-only
+fictional example at `/demo`; it never calls the real backend.
 
 The public route includes three locally bundled, generated test images from
 `src/ai/synthetic_dataset` (electricity, water, waste). The page simulates
@@ -88,24 +87,19 @@ never provided to the public page. Do **not** remove DEMO_PASSWORD or disable
 DEMO_ACCESS_ENABLED in Render. The public demo is not a replacement for real
 production authentication, audit, or verified ESG claims.
 
-## Password-free full ESG workspace (public synthetic sandbox)
+## Signed-in ESG Passport homepage (Supabase + configured Gemini OCR)
 
-`PUBLIC_WORKSPACE_ENABLED=true` is applied to both services from the Render Blueprint
-environment group. Anonymous visitors to `/` see the **original complete ESG Passport
-UI**, not a separate login/demo mockup. The frontend proxies their existing
-`/api/backend/*` calls to `/sandbox/*` on the backend, using only its own
-server-side shared key. The backend mounts a separate, generated **in-memory
-SQLite database and synthetic-only in-memory evidence storage**. This code
-path never opens Supabase connections or files and resets on restart; it is
-shared among anonymous visitors. Don't enter personal information: the
-fictional workspace is communal. Public uploads accept only three SHA-256-verified synthetic PNG fixtures with a matching category/month and a 512 KB cap. Other uploads are rejected.
+The hosted `/` page requires the signed staff demo session. The Next.js
+`/api/backend/*` proxy sends **authenticated** requests to FastAPI, backed by
+Supabase PostgreSQL and private Supabase Storage. New protected document
+uploads use the server's configured OCR mode, including Gemini and optional
+Grafilab fallback; users must check and confirm the extracted fields.
 
-The production Postgres/Supabase services and authorized real customer shares
-remain behind the original signed staff session at `/login`; the real backend
-always requires the private server-to-server key. Removing `DEMO_PASSWORD` is
-not necessary or recommended. The sandbox displays the normal site and does
-not make actual ESG claims. The older `/demo` static experience redirects to
-`/` when this option is enabled.
+Anonymous API requests are rejected, even if an existing Render service still
+sets the legacy `PUBLIC_WORKSPACE_ENABLED=true` value. New Blueprint
+configurations disable that option. `/demo` is a separate browser-only
+fictional experience, and `/ocr` is client-side OCR without Supabase access.
+The old shared in-memory SQLite sandbox is no longer exposed by the frontend.
 
 ## Local browser OCR scanner (public `/ocr`)
 
@@ -131,21 +125,10 @@ The anonymous access gate allows only `/ocr` and the bundled PDF worker
 asset required for scanning, in addition to previously approved public
 paths; protected real backend and customer-sharing routes are unchanged.
 
-## Live Gemini OCR + Supabase staff workspace (`/live`)
+## Optional signed-in alias (`/live`)
 
-The hosted `/live` route is a separate, **signed-session-only** entry into the
-real ESG Passport. Visitors without a signed staff session are redirected to
-`/login?next=%2Flive`; authenticated staff access the existing app UI.
-Authenticated `/api/backend/*` proxy requests use the protected main backend
-(Supabase Postgres + private Storage), **not** the anonymous `/sandbox` SQLite
-instance. The backend uses Gemini OCR for protected uploads when its server-side
-`ESG_OCR_MODE` enables it. Grafilab is an optional provider fallback.
-The OCR engine/model appear in the document review metadata. All extraction
-candidates remain unverified until manually reviewed and confirmed.
-
-The public `/` experience remains a disposable synthetic sandbox with no access
-to the real Supabase workspace. Do not remove the signed-session requirement,
-store API keys in `NEXT_PUBLIC_*`, or route anonymous requests to the real
-backend: the application uses simulated staff roles and is **not** a secure
-public multi-tenant SaaS product. Only authorized staff should know the demo
-password; use genuine identity and row-level authorization for production.
+`/live` remains a protected alias to the same Supabase-backed workspace.
+`/` and `/live` both require a staff session. The demo's shared password
+and simulated roles are not production-grade user authentication or tenancy.
+Do not give the shared password to anonymous visitors or use this deployment
+for confidential real-customer documents.
