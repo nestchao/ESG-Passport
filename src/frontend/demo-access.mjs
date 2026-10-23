@@ -96,7 +96,7 @@ function validPath(segments){return Array.isArray(segments)&&segments.length>0&&
 export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  if(!config.enabled)return error('Demo proxy is disabled.',404);
  if(!verifySession(tokenFrom(request),config))return error('Demo sign-in required.',401);
- if(!['GET','POST','PUT'].includes(request.method))return error('Method not allowed.',405);
+ if(!['GET','POST','PUT','DELETE'].includes(request.method))return error('Method not allowed.',405);
  if(request.method!=='GET'&&!sameOrigin(request,config))return error('Request origin is not allowed.',403);
  if(!validPath(segments))return error('Invalid backend path.',400);
  const incoming=new URL(request.url),target=`${config.backendUrl}/${segments.map(encodeURIComponent).join('/')}${incoming.search}`;

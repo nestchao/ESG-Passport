@@ -52,7 +52,7 @@ test('path origin method and upstream redirect validation',async()=>{
  const fail=()=>{throw Error('must not fetch');};
  for(const segments of [['..','secret'],['%2e%2e','secret'],['https:','evil'],['foo/bar'],['foo\\bar'],['%252e%252e'],[]])assert.equal((await proxyBackend(authed('/profile'),segments,cfg(),fail)).status,400);
  for(const headers of [{},{origin:'https://evil.example'}])assert.equal((await proxyBackend(authed('/profile',{method:'POST',headers,body:'{}'}),['profile'],cfg(),fail)).status,403);
- assert.equal((await proxyBackend(authed('/profile',{method:'DELETE',headers:{origin}}),['profile'],cfg(),fail)).status,405);
+ assert.equal((await proxyBackend(authed('/profile',{method:'PATCH',headers:{origin}}),['profile'],cfg(),fail)).status,405);
  assert.equal((await proxyBackend(authed('/profile'),['profile'],cfg(),async()=>new Response(null,{status:307,headers:{location:'https://evil.example'}}))).status,502);
 });
 
@@ -99,4 +99,17 @@ test('full ten MiB file survives its multipart envelope with form fields',async(
   return Response.json({id:'test-document'},{status:201});
  });
  assert.equal(response.status,201);assert.equal(checked,true);
+});
+
+test('owner deletion proxy preserves session and same-origin protections',async()=>{
+ const docId='synthetic-doc';let call;
+ const upstream=async(...args)=>{call=args;return new Response(JSON.stringify({deleted:true,id:docId}),{headers:{'content-type':'application/json'}});};
+ const deleted=authed(`/documents/${docId}`,{method:'DELETE',headers:{origin,'X-Demo-Role':'owner','content-type':'application/json'},body:JSON.stringify({expected_version:2})});
+ const result=await proxyBackend(deleted,['documents',docId],cfg(),upstream);
+ assert.equal(result.status,200);assert.equal((await result.json()).deleted,true);
+ assert.equal(call[1].method,'DELETE');assert.equal(call[1].headers.get('X-Demo-Role'),'owner');
+ assert.equal(call[1].headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);
+ assert.equal(new TextDecoder().decode(call[1].body),'{"expected_version":2}');
+ assert.equal((await proxyBackend(authed(`/documents/${docId}`,{method:'DELETE',headers:{origin:'https://evil.example','content-type':'application/json'},body:'{}'}),['documents',docId],cfg(),upstream)).status,403);
+ assert.equal((await proxyBackend(req(`/api/backend/documents/${docId}`,{method:'DELETE',headers:{origin},body:'{}'}),['documents',docId],cfg(),upstream)).status,401);
 });

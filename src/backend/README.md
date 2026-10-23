@@ -80,3 +80,18 @@ Duplicate-file 409 responses include the existing document ID, assigned period a
 ## Protected hosted demo
 
 On Render, DEMO_ACCESS_ENABLED=true and BACKEND_SHARED_KEY (at least 32 characters) are required; invalid demo protection fails startup. ALLOW_SAMPLE_RESET must remain false. Every route except GET /health requires X-Demo-Backend-Key from the frontend server proxy. Existing role checks and pack-token/evidence checks still apply. See [the Render guide](../../docs/DEPLOY-RENDER.md) for setup and automatic updates.
+
+## Delete a record (Owner only)
+
+Records offers **Archive** (reversible) and **Delete** (permanent) separately.
+The Owner can delete an active or archived record only after typing `DELETE` in
+the confirmation dialog. The API requires the record's current version:
+`DELETE /documents/{document_id}` with JSON `{"expected_version": <version>}`.
+This permanently removes the original object and all activity revisions,
+invalidates current questionnaire drafts and calculations, and keeps an audit
+event recording the actor and reporting month. Deletion is rejected if an
+approved customer Passport or any historical owner declaration references
+the record. Use Archive to retain historical/audited evidence.
+
+For this prototype the Owner role is simulated. Real-world permanent deletion
+requires production identity and retention-policy controls before rollout.

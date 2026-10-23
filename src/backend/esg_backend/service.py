@@ -251,6 +251,70 @@ class Workspace:
         self.db.commit()
         return result
 
+    def delete_document(self, document_id, body):
+        """Owner-only permanent delete of evidence without approved references.
+
+        The original is temporarily buffered so a DB commit failure can
+        restore the immutable Storage object; audit events stay in the DB.
+        No approved pack or historical declaration may lose its evidence.
+        """
+        self.require_owner()
+        self.company(lock=True)
+        doc = self.db.scalar(select(Document).where(
+            Document.id == document_id, Document.company_id == self.settings.company_id
+        ).with_for_update())
+        if doc is None:
+            raise HTTPException(404, 'Document not found.')
+        self.check_version(doc, body.expected_version)
+        for pack in self.db.scalars(select(ApprovedSnapshot).where(
+                ApprovedSnapshot.company_id == self.settings.company_id)):
+            snapshot = pack.snapshot or {}
+            if (document_id in snapshot.get('selected_evidence_ids', []) or
+                    any(item.get('id') == document_id for item in snapshot.get('evidence', []))):
+                raise HTTPException(409, 'This record belongs to an approved customer Passport. Archive it instead; approved evidence cannot be deleted.')
+        for declaration in self.db.scalars(select(Declaration).where(
+                Declaration.company_id == self.settings.company_id)):
+            if document_id in (declaration.evidence_ids or []):
+                raise HTTPException(409, 'An owner declaration references this record. Remove that reference before deleting, or archive the record.')
+        period, path, mime, name = doc.period, doc.object_path, doc.mime_type, doc.name
+        original = self.storage.download(path)
+        # Explicitly remove revisions; SQLite tests may not enable FK cascades,
+        # while Postgres enforces them. Invalidate current drafts before delete.
+        self.invalidate([period], document_id)
+        self.db.execute(delete(Activity).where(Activity.company_id == self.settings.company_id,
+                                               Activity.document_id == document_id))
+        self.db.delete(doc)
+        self.log('document_deleted', document_id,
+                 f'Permanently deleted an eligible {doc.type} record, its activity revisions and source file.', period)
+        self.db.flush()
+        try:
+            # Do not commit a DB deletion when object removal itself fails.
+            self.storage.delete([path])
+        except Exception:
+            self.db.rollback()
+            # A storage service may have deleted the file before reporting an
+            # error. Check the original and attempt compensation if missing.
+            try:
+                self.storage.download(path)
+            except Exception:
+                try:
+                    self.storage.upload(path, original, mime)
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).error('CRITICAL: uncertain Storage deletion left source evidence unavailable.')
+            raise
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            try:
+                self.storage.upload(path, original, mime)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).error('CRITICAL: failed to restore source evidence after document deletion commit failure.')
+            raise
+        return {'deleted': True, 'id': document_id, 'period': period}
+
     def upload(self, filename, category, content, mime_type, period='2026-09'):
         self.period(period)
         company = self.company(lock=True)
