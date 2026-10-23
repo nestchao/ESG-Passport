@@ -1,0 +1,3 @@
+# Runtime packages plus tools for local tests.
+-r requirements.txt
+pytest>=8,<10
