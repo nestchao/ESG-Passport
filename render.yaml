@@ -1,0 +1,60 @@
+# Free, synthetic hackathon demo. Enter secrets in Render, never in this file.
+# Both services watch main. Root directories limit rebuilds to their own code.
+envVarGroups:
+  - name: esg-passport-demo-access
+    envVars:
+      - key: DEMO_ACCESS_ENABLED
+        value: "true"
+      - key: BACKEND_SHARED_KEY
+        generateValue: true
+
+services:
+  - type: web
+    name: esg-passport-api
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: commit
+    rootDir: src/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn esg_backend.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: esg-passport-demo-access
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVER_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: esg-evidence
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: ALLOW_SAMPLE_RESET
+        value: "false"
+
+  - type: web
+    name: esg-passport-web
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: commit
+    rootDir: src/frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
+    healthCheckPath: /login
+    envVars:
+      - fromGroup: esg-passport-demo-access
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_URL
+        value: /api/backend
+      - key: BACKEND_INTERNAL_URL
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
+      - key: DEMO_SESSION_SECRET
+        generateValue: true

@@ -23,7 +23,7 @@ export function createApiClient({baseUrl=DEFAULT_API_URL,fetchImpl=(...args)=>fe
     if(options.body instanceof FormData)headers.delete('Content-Type');
     else if(options.body!=null&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
     let response;
-    try{response=await fetchImpl(`${base}${path}`,{...options,headers,credentials:'omit',cache:'no-store'});}
+    try{response=await fetchImpl(`${base}${path}`,{...options,headers,credentials:base==='/api/backend'?'same-origin':'omit',cache:'no-store'});}
     catch{throw Error(connectionMessage);}
     if(!response.ok){
       let payload;try{payload=await response.json();}catch{}
