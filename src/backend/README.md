@@ -121,3 +121,37 @@ suggestion. The existing Records form displays the reason and source wording,
 with **Use suggested category** as a separate user action. No category is
 selected or entered into calculations without human action and the normal
 record confirmation. Original OCR and reporting-month safeguards still apply.
+# Optional Gemini and Grafilab AI OCR
+
+Protected staff document uploads can use an **opt-in** AI vision OCR adapter.
+The existing `POST /documents` API and human review/confirmation stay the same.
+The original evidence is stored unchanged. AI suggestions are unverified and
+cannot enter ESG calculations until a clerk explicitly reviews and confirms.
+
+Set these server-side values in your repository-root `.env` (local testing) or
+Render **backend** environment (hosted). Do not expose keys via `NEXT_PUBLIC_`:
+
+```dotenv
+ESG_OCR_MODE=gemini_grafilab_fallback
+GEMINI_API_KEY=your-secret-value
+GEMINI_OCR_MODEL=gemini-2.5-flash-lite
+GRAFILAB_API_KEY=your-secret-value
+GRAFILAB_BASE_URL=https://llm.grafilab.ai/v1
+GRAFILAB_OCR_MODEL=grafilab/qwen3.5-397b-a17b
+```
+
+Available modes: `offline` (default, no external document transmission),
+`gemini`, `grafilab`, `gemini_grafilab_fallback` (only use Grafilab when Gemini
+fails), and `compare` (send the document to **both** paid/external services,
+report whether extracted candidates agree, and select Gemini's candidates).
+Each configured provider can incur fees. Verify the model ID available to your
+account before enabling. Remote AI requests have timeouts; a failure falls
+back to the existing offline RapidOCR reader. Public synthetic sandbox uploads
+never invoke remote AI. **Do not enable remote OCR for confidential evidence
+unless the uploader is permitted to share it with those external providers.**
+
+Only the first page is accepted by the protected document uploader, as before.
+AI OCR returns verbatim text lines; the existing conservative extraction parser
+supplies review candidates. Review the original document and correct every
+quantity, unit, and reporting date. No live provider calls are made by tests;
+test with `python -m pytest src/backend/tests/test_ai_ocr.py -q`.

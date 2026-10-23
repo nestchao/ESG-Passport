@@ -337,8 +337,8 @@ class Workspace:
             # OCR is never considered confirmed evidence or a calculation input.
             from copy import deepcopy
             if precomputed_extraction is None:
-                from .bill_ocr import extract_upload
-                extracted = extract_upload(content, mime, category, period)
+                from .ai_ocr import extract_with_ai
+                extracted = extract_with_ai(content, mime, category, period, self.settings)
             else:
                 # Public synthetic fixtures use precomputed values to avoid
                 # loading ONNX OCR models on Render's small free instance.
