@@ -140,6 +140,10 @@ def create_app(*, settings=None, session_factory=None, storage=None):
             'Content-Disposition': f"inline; filename*=UTF-8''{quote(name, safe='')}",
             'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
 
+    @api.post('/documents/{document_id}/ocr/retry')
+    def retry_document_ocr(document_id: str, body: DocumentVersionInput, work=Depends(workspace)):
+        return work.retry_ocr(document_id, body)
+
     @api.get('/documents/{document_id}/file')
     def document_file(document_id: str, work=Depends(workspace)):
         return file_response(work.file(document_id))
