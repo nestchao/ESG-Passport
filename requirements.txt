@@ -1,2 +1,4 @@
-# Add Python dependencies here once the application stack is selected.
-# No third-party packages are required by this starter structure.
+# Public offline workflow and synthetic generator dependencies.
+# Install with uv targeting an explicit project environment.
+-r src/ai/workflow/requirements.txt
+-r src/ai/synthetic_generator/requirements.txt
