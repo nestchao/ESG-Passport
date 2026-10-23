@@ -61,11 +61,13 @@ def test_both_fail_offline_preserves_upload(monkeypatch):
 
 def test_compare_flags_conflicting_candidates(monkeypatch):
     monkeypatch.setattr(ai_ocr, '_image_bytes', lambda a,b: (a,b))
-    monkeypatch.setattr(ai_ocr, '_gemini', lambda *a: ['Electricity Usage: 10 kWh'])
-    monkeypatch.setattr(ai_ocr, '_grafilab', lambda *a: ['Electricity Usage: 20 kWh'])
-    got = ai_ocr.extract_with_ai(b'x', 'image/png', 'electricity', '2026-09',
-                                  settings('compare'))
+    monkeypatch.setattr(ai_ocr, '_gemini', lambda image, mime, opts, model=None: [
+        'Electricity Usage: 10 kWh' if model == 'gemini-A' else 'Electricity Usage: 20 kWh'])
+    opts = Settings(esg_ocr_mode='compare', esg_compare_models=('gemini-A', 'gemini-B'),
+                    gemini_api_key='example-only')
+    got = ai_ocr.extract_with_ai(b'x', 'image/png', 'electricity', '2026-09', opts)
     assert got['ocr_comparison']['agrees_on_candidates'] is False
+    assert got['ocr_comparison']['requested_models'] == ['gemini-A', 'gemini-B']
 
 
 def test_sandbox_never_calls_external_providers(monkeypatch):

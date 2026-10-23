@@ -33,6 +33,7 @@ class Settings:
     public_workspace_enabled: bool = False
     sandbox_instance: bool = False
     esg_ocr_mode: str = 'offline'
+    esg_compare_models: tuple[str, ...] = ()
     gemini_api_key: str = field(default='', repr=False)
     gemini_ocr_model: str = 'gemini-2.5-flash-lite'
     grafilab_api_key: str = field(default='', repr=False)
@@ -54,6 +55,7 @@ class Settings:
             render_hosted=os.getenv('RENDER', '').strip().lower() == 'true',
             public_workspace_enabled=os.getenv('PUBLIC_WORKSPACE_ENABLED', '').strip().lower() == 'true',
             esg_ocr_mode=os.getenv('ESG_OCR_MODE', 'offline').strip().lower(),
+            esg_compare_models=tuple(model.strip() for model in os.getenv('ESG_COMPARE_MODELS', '').split(',') if model.strip()),
             gemini_api_key=os.getenv('GEMINI_API_KEY', '').strip(),
             gemini_ocr_model=os.getenv('GEMINI_OCR_MODEL', 'gemini-2.5-flash-lite').strip(),
             grafilab_api_key=os.getenv('GRAFILAB_API_KEY', '').strip(),

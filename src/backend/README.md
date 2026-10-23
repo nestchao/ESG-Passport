@@ -134,6 +134,7 @@ Render **backend** environment (hosted). Do not expose keys via `NEXT_PUBLIC_`:
 ```dotenv
 ESG_OCR_MODE=gemini_grafilab_fallback
 GEMINI_API_KEY=your-secret-value
+ESG_COMPARE_MODELS=gemini-3.5-flash-lite,gemini-3.1-flash-lite
 GEMINI_OCR_MODEL=gemini-2.5-flash-lite
 GRAFILAB_API_KEY=your-secret-value
 GRAFILAB_BASE_URL=https://llm.grafilab.ai/v1
@@ -141,9 +142,11 @@ GRAFILAB_OCR_MODEL=grafilab/qwen3.5-397b-a17b
 ```
 
 Available modes: `offline` (default, no external document transmission),
-`gemini`, `grafilab`, `gemini_grafilab_fallback` (only use Grafilab when Gemini
-fails), and `compare` (send the document to **both** paid/external services,
-report whether extracted candidates agree, and select Gemini's candidates).
+`gemini` (first Gemini model in `ESG_COMPARE_MODELS`), `grafilab`,
+`gemini_grafilab_fallback` (Grafilab when the first Gemini model fails),
+`compare` (first two Gemini models in `ESG_COMPARE_MODELS`), and
+`compare_grafilab` (first Gemini model and Grafilab). Comparison modes
+make two external requests and check whether extracted values agree.
 Each configured provider can incur fees. Verify the model ID available to your
 account before enabling. Remote AI requests have timeouts; a failure falls
 back to the existing offline RapidOCR reader. Public synthetic sandbox uploads
