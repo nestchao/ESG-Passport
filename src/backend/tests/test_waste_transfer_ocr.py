@@ -82,3 +82,50 @@ def test_existing_waste_document_can_recover_old_failed_ocr_without_modifying_or
         json={'activities':[blank],'confirmed':True,'expected_version':initial['version']})
     assert mismatch.status_code==422
     assert get(client,f'/documents/{initial["id"]}')['confirmed'] is False
+
+
+def test_declared_destination_is_a_low_confidence_suggestion_only():
+    recycling=parse_bill_text(['Tarikh: 29/03/2026','Tujuan: RECYCLING',
+        'Gross 13,680 kg','Tare 8,830 kg','Net 4,850 kg'], 'waste','2026-03')
+    suggestion=recycling['waste_category_suggestion']
+    assert suggestion['category']=='waste_diverted'
+    assert suggestion['confidence']=='low'
+    assert suggestion['status']=='unverified_suggestion'
+    assert suggestion['basis']=='declared_destination_only'
+    assert 'Tujuan: RECYCLING' in suggestion['source_text']
+    assert recycling['activities']==[]
+
+    landfill=parse_bill_text(['Ticket: W001','13/01/2026','Route',': LANDFILL',
+        'Gross 3,700 kg','Tare 130 kg','Net weight 3,570 kg'], 'waste','2026-01')
+    assert landfill['waste_category_suggestion']['category']=='waste_disposed'
+    assert landfill['waste_category_suggestion']['confidence']=='low'
+    assert landfill['activities']==[]
+
+
+def test_destination_suggestion_does_not_guess_on_ambiguity_or_negation():
+    tickets=[
+        ['Tujuan: RECYCLING','Route: LANDFILL', 'Net 50 kg'],
+        ['Tujuan: Not recycled','Net 50 kg'],
+        ['Route: not landfill','Net 50 kg'],
+        ['No route shown','Net 50 kg'],
+        ['Note: not proof of completed recycling','Net 50 kg'],
+        ['Tujuan: PENDING','Net 50 kg'],
+        ['Tujuan: RECYCLING','Route: UNKNOWN','Net 50 kg'],
+    ]
+    for lines in tickets:
+        result=parse_bill_text(lines,'waste','2026-03')
+        assert result['waste_category_suggestion'] is None, lines
+        assert result['activities']==[], lines
+
+
+def test_suggestion_is_available_through_existing_unconfirmed_record(workspace):
+    client,_,_,_=workspace
+    response=client.post('/documents',headers=CLERK,data={'type':'waste','period':'2026-03'},
+        files={'file':('weighbridge.png',SOURCE.read_bytes(),'image/png')})
+    assert response.status_code==201,response.text
+    doc=response.json()
+    assert doc['extraction']['waste_category_suggestion']['category']=='waste_diverted'
+    assert doc['activities']==[] and not doc['confirmed']
+    reopened=get(client,f'/documents/{doc["id"]}')
+    assert reopened['extraction']['waste_category_suggestion']['status']=='unverified_suggestion'
+    assert reopened['activities']==[]

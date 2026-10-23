@@ -22,6 +22,7 @@ const DeclarationSummary=component('./declaration-summary.tsx','DeclarationSumma
 const DesktopOverview=component('./desktop-overview.tsx','DesktopOverview');
 const DraftAnswer=component('./draft-answer.tsx','DraftAnswer');
 const RoleSwitcher=component('./role-switcher.tsx','RoleSwitcher');
+const RecordFields=component('./record-fields-form.tsx','RecordFields');
 
 test('declaration UI renders policy rows with labels rather than JSON',()=>{
   const html=renderToStaticMarkup(createElement(DeclarationSummary,{code:'G2.1',value:{policies:[{name:'Conduct',status:'in place'},{name:'Safety',status:'unknown'},{name:'Reporting',status:'not in place'}]}}));
@@ -102,4 +103,17 @@ test('workspace role selector exposes a labelled menu button and current role fo
 test('workspace role selector prevents switching during a backend operation',()=>{
  const html=renderToStaticMarkup(createElement(RoleSwitcher,{value:'owner',onChange(){},disabled:true}));
  assert.match(html,/<button[^>]*disabled=""/);
+});
+
+test('waste activity suggestion requires an explicit click before category selection',()=>{
+ const rows=[{category:'',quantity:'4850',unit:'kg',period_start:'2026-03-29',period_end:'2026-03-29',estimated:false}];
+ const suggestion={category:'waste_diverted',status:'unverified_suggestion',reason:'Only a declared destination, not verified diversion.',source_text:'Tujuan: RECYCLING'};
+ const markup=renderToStaticMarkup(createElement(RecordFields,{documentType:'waste',rows,wasteSuggestion:suggestion,onChange(){},errors:{},disabled:false}));
+ assert.match(markup,/Choose category/);
+ assert.match(markup,/Suggested: Waste diverted \(unverified\)/);
+ assert.match(markup,/Use suggested category/);
+ assert.match(markup,/Tujuan: RECYCLING/);
+ assert.doesNotMatch(markup,/option value="waste_diverted" selected=""/);
+ const chosen=renderToStaticMarkup(createElement(RecordFields,{documentType:'waste',rows:[{...rows[0],category:'waste_diverted'}],wasteSuggestion:suggestion,onChange(){},errors:{},disabled:false}));
+ assert.doesNotMatch(chosen,/Use suggested category/);
 });

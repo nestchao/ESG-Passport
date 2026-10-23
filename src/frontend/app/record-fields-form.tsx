@@ -2,9 +2,9 @@
 import {useId} from 'react';
 import {allowedCategories,allowedUnits,categoryLabel} from './record-fields.mjs';
 type Row=Record<string,any>;
-type Props={documentType:string;rows:Row[];onChange:(rows:Row[])=>void;errors:Record<string,string>;disabled:boolean};
+type Props={documentType:string;rows:Row[];onChange:(rows:Row[])=>void;errors:Record<string,string>;disabled:boolean;wasteSuggestion?:Row|null};
 const unitLabel=(unit:string)=>unit==='m3'?'m³':unit;
-export function RecordFields({documentType,rows,onChange,errors,disabled}:Props){
+export function RecordFields({documentType,rows,onChange,errors,disabled,wasteSuggestion}:Props){
  const prefix=useId();const categories=allowedCategories(documentType);const unused=categories.filter(category=>!rows.some(row=>row.category===category));
  const update=(index:number,field:string,value:any)=>onChange(rows.map((row,i)=>i===index?{...row,[field]:value}:row));
  return <>{rows.map((row,index)=>{
@@ -14,6 +14,10 @@ export function RecordFields({documentType,rows,onChange,errors,disabled}:Props)
  const units=row.category?allowedUnits(row.category):documentType==='waste'?['kg','t']:allowedUnits(row.category);const crossMonth=row.period_start?.slice(0,7)!==row.period_end?.slice(0,7);
  return <div className="activity-editor" key={index}><div className="flex-between"><strong>Quantity {index+1}</strong>{rows.length>1&&<button type="button" disabled={disabled} className="text-button danger" onClick={()=>onChange(rows.filter((_,i)=>i!==index))}>Remove</button>}</div>
  <label>Category<select {...props('category')} value={row.category||''} onChange={event=>{const category=event.target.value;onChange(rows.map((item,i)=>i===index?{...item,category,unit:allowedUnits(category).includes(item.unit)?item.unit:allowedUnits(category)[0]||''}:item));}}>{!categories.includes(row.category)&&<option value={row.category||''}>Choose category</option>}{categories.map(category=><option key={category} value={category}>{categoryLabel(category)}</option>)}</select>{error('category')}</label>
+ {documentType==='waste'&&index===0&&!row.category&&wasteSuggestion&&
+  ['waste_generated','waste_diverted','waste_disposed'].includes(wasteSuggestion.category)&&
+  wasteSuggestion.status==='unverified_suggestion'&&
+  <div className="info-note" role="status"><strong>Suggested: {categoryLabel(wasteSuggestion.category)} (unverified)</strong><p>{wasteSuggestion.reason}</p><p className="field-note">OCR source: {wasteSuggestion.source_text}</p><p>This uses the declared destination only. Check supporting evidence before adopting it; this is not proof of completed waste treatment.</p><button type="button" className="button secondary small" disabled={disabled} onClick={()=>update(index,'category',wasteSuggestion.category)}>Use suggested category</button></div>}
  <p className="field-note">Source: {row.source_reference||'Page 1; manually checked'}{row.uncertainty?` · ${row.uncertainty}`:''}</p>
  <div className="two-fields"><label>Quantity<input {...props('quantity')} type="text" inputMode="decimal" value={row.quantity??''} onChange={event=>update(index,'quantity',event.target.value)}/>{error('quantity')}</label><label>Unit<select {...props('unit')} value={row.unit||''} onChange={event=>update(index,'unit',event.target.value)}>{!units.includes(row.unit)&&<option value={row.unit||''}>Choose unit</option>}{units.map(unit=><option key={unit} value={unit}>{unitLabel(unit)}</option>)}</select>{error('unit')}</label></div>
  <div className="two-fields"><label>Period start<input {...props('period_start')} type="date" value={row.period_start||''} onChange={event=>update(index,'period_start',event.target.value)}/>{error('period_start')}</label><label>Period end<input {...props('period_end')} type="date" value={row.period_end||''} onChange={event=>update(index,'period_end',event.target.value)}/>{error('period_end')}</label></div>

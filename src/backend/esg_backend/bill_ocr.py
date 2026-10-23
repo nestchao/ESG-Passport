@@ -102,6 +102,58 @@ def _waste_transfer_weight(lines, first, last):
             'source_reference': 'OCR page 1, NET / BERAT BERSIH: ' + source[:145]}, None
 
 
+# A declared route is only a clue about a possible ESG outcome. Never
+# interpret notes/disclaimers (e.g. "not proof of completed disposal") or a
+# bare word elsewhere in the ticket as classification evidence.
+WASTE_ROUTE_LABEL = re.compile(
+    r'^\s*(?:tujuan|destination|destinasi|route|disposal\s*route|treatment\s*route|laluan)\s*[:\-]?\s*(.*)$', re.I)
+WASTE_ROUTE_RECYCLING = re.compile(r'\b(?:recycl(?:ing|e[ds]?)|recovery|kitar\s*semula|dikitar\s*semula)\b', re.I)
+WASTE_ROUTE_DISPOSAL = re.compile(r'\b(?:landfill|dispos(?:al|ed)|pelupusan|tapak\s*pelupusan)\b', re.I)
+
+
+def _waste_route_suggestion(lines):
+    """Suggest from an explicit declared destination, never verified outcome.
+
+    Keep a blank category on contradictory/negated/unsupported route text.
+    """
+    suggestions = []
+    route_values = 0
+    for index, text in enumerate(lines):
+        match = WASTE_ROUTE_LABEL.fullmatch(text)
+        if not match:
+            continue
+        route = match.group(1).strip()
+        source = text
+        if not route and index + 1 < len(lines):
+            # Structured two-line route values occur in weighbridge slips.
+            next_value = lines[index + 1].strip()
+            if next_value.startswith(':'):
+                route = next_value.lstrip(':').strip()
+                source = text + ' ' + next_value
+        if not route:
+            continue
+        route_values += 1
+        if len(route) > 90:
+            continue
+        recycling = bool(WASTE_ROUTE_RECYCLING.search(route))
+        disposal = bool(WASTE_ROUTE_DISPOSAL.search(route))
+        if recycling == disposal:
+            continue
+        # Ambiguous / negated route wording is not safe to suggest.
+        if re.search(r'\b(?:not|no|without|bukan|tidak|unknown|pending|planned|proposed)\b', route, re.I):
+            continue
+        category = 'waste_diverted' if recycling else 'waste_disposed'
+        suggestions.append((category, source))
+    if not suggestions or len(suggestions) != route_values or len(set(category for category, _ in suggestions)) != 1:
+        return None
+    category, source = suggestions[0]
+    return {'category': category, 'confidence': 'low', 'status': 'unverified_suggestion',
+            'basis': 'declared_destination_only', 'source_text': source[:150],
+            'reason': 'The ticket declares a recycling/recovery destination, but does not prove completed diversion.'
+                      if category == 'waste_diverted' else
+                      'The ticket declares a landfill/disposal destination, but does not prove completed disposal.'}
+
+
 def parse_bill_text(lines, category, month):
     """Require unit + relevant label; never guess based on price or arbitrary numbers."""
     notes = ['OCR candidates are unverified. Check the original document before confirming.']
@@ -139,7 +191,7 @@ def parse_bill_text(lines, category, month):
     # treatment or generation. Even a destination and mass on the SAME LINE
     # ("RECYCLING 4,850 kg") must not automatically become waste_diverted.
     is_transfer_ticket = category == 'waste' and any(re.search(
-        r'weighbridge|timbang|\bgross\b|\btare\b|\bnet\s*weight\b|berat\s*bersih',
+        r'weighbridge|timbang|\bgross\b|\btare\b|\bnet\b|berat\s*bersih',
         line, re.I) for line in clean_lines)
     activities = []
     for kind in categories:
@@ -198,16 +250,20 @@ def parse_bill_text(lines, category, month):
         else:
             notes.append(f'{kind}: no clearly labelled quantity and unit found; enter manually.')
     transfer_candidate = None
+    waste_category_suggestion = None
     if category == 'waste' and not activities:
         transfer_candidate, transfer_warning = _waste_transfer_weight(clean_lines, first, last)
         if transfer_warning:
             notes.append(transfer_warning)
         if transfer_candidate:
+            waste_category_suggestion = _waste_route_suggestion(clean_lines)
             # The exact mass was found; category is deliberately unresolved.
             # Three redundant per-category "no quantity" messages otherwise
             # make this look like OCR failed completely.
             notes = [note for note in notes if not re.match(r'^waste_(?:generated|diverted|disposed): no clearly labelled', note)]
             notes.append('Detected net transfer weight ' + transfer_candidate['quantity'] + ' ' + transfer_candidate['unit'] + '. You must choose a supported ESG waste category after checking additional evidence.')
+        if waste_category_suggestion:
+            notes.append('Suggested category is based only on the declared route and is NOT verified. Review supporting evidence before applying or confirming it.')
         notes.append('Transfer weights and declared destinations do not prove waste generated, diverted, or disposed; select a category only with supporting evidence.')
     document_date = None
     for line in clean_lines:
@@ -228,6 +284,7 @@ def parse_bill_text(lines, category, month):
     return {'supplier_name': supplier, 'document_date': document_date,
             'period_start': first.isoformat(), 'period_end': last.isoformat(),
             'activities': activities, 'waste_transfer_candidate': transfer_candidate,
+            'waste_category_suggestion': waste_category_suggestion,
             'uncertainty_notes': notes,
             'ocr_status': 'candidate_found' if activities or transfer_candidate else 'manual_entry_required',
             'ocr_engine': 'RapidOCR (offline)'}

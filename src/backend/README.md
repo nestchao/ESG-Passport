@@ -109,3 +109,15 @@ GROSS and TARE are not used as the reported quantity; where all three weights
 are readable the net amount is checked against gross-minus-tare. Original
 documents and first-pass OCR are retained. Existing unconfirmed records with
 previously failed OCR can be reopened for read-only candidate recovery.
+
+### Suggested waste classification (offline, unverified)
+
+When a weighbridge ticket with a net weight has an explicit **declared route**
+(e.g., `Tujuan: RECYCLING` or `Route: LANDFILL`), the backend provides a
+low-confidence `waste_category_suggestion`. This is deterministic text-based
+assistance, **not a trained LLM**, independent assurance, or proof that the
+route was fulfilled. Contradictory, unknown, or negated route text produces no
+suggestion. The existing Records form displays the reason and source wording,
+with **Use suggested category** as a separate user action. No category is
+selected or entered into calculations without human action and the normal
+record confirmation. Original OCR and reporting-month safeguards still apply.
