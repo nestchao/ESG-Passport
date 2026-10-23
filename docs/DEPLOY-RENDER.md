@@ -72,3 +72,14 @@ Local development stays frontend 3000 and backend 8001, with DEMO_ACCESS_ENABLED
 References: https://render.com/docs/blueprint-spec and https://render.com/docs/deploys and https://render.com/docs/free
 
 Render automatically provides the frontend RENDER_EXTERNAL_URL used to check login/save origins behind HTTPS termination. If you later use a custom domain, set frontend DEMO_PUBLIC_ORIGIN to that exact HTTPS origin and redeploy. Leave it unset for the normal Render address. Changing DEMO_SESSION_SECRET invalidates existing demo sessions.
+
+### Public synthetic demo and protected workspace
+
+The frontend now has an anonymous `/demo` route using **only** three bundled
+synthetic fixtures (electricity, water and waste). Anonymous requests for `/`
+without query parameters redirect to `/demo`; customer share links, the real
+workspace and **all** backend API routes remain session-protected. The login
+form includes a link to the public sandbox, while staff use `/login` with the
+existing `DEMO_PASSWORD`. Do not unset or weaken the demo access configuration
+or connect the public demo to Supabase. Its review and sharing steps are only
+local browser simulations; they cannot approve or expose customer data.
