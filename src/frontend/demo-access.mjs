@@ -61,13 +61,21 @@ function acceptedLoginCsrf(request,config,submitted){
 }
 function allowedLoginOrigin(request,config,submitted){
  if(sameOrigin(request,config))return true;
- // A foreign/opaque Origin always fails, even with a valid form token.
- if(request.headers.has('origin'))return false;
- // Explicit cross-site/sibling-site or background metadata also fails.
+ const origin=request.headers.get('origin');
+ // Only the native login form may use the double-submit fallback. Edge can
+ // send the literal Origin: null on a same-origin form navigation. Treat that
+ // opaque origin as untrusted unless ALL three browser Fetch Metadata signals
+ // confirm same-origin document navigation AND the signed CSRF token matches.
+ // Explicit foreign origins always fail even with valid CSRF credentials.
+ if(origin!==null&&origin!=='null')return false;
  const site=request.headers.get('sec-fetch-site');
- if(site==='cross-site'||site==='same-site')return false;
  const mode=request.headers.get('sec-fetch-mode'),dest=request.headers.get('sec-fetch-dest');
- if((mode&&mode!=='navigate')||(dest&&dest!=='document'))return false;
+ if(origin==='null'){
+  if(site!=='same-origin'||mode!=='navigate'||dest!=='document')return false;
+ }else{
+  if(site==='cross-site'||site==='same-site')return false;
+  if((mode&&mode!=='navigate')||(dest&&dest!=='document'))return false;
+ }
  return acceptedLoginCsrf(request,config,submitted);
 }
 
