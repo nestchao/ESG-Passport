@@ -29,3 +29,12 @@ test('an API address containing credentials is never embedded in the browser',as
   const {getPublicEnvironment}=await import(moduleUrl);
   assert.throws(()=>getPublicEnvironment({environment:{NEXT_PUBLIC_API_URL:'https://fake-user:fake-secret@example.com'},envFile:'absent'}),/public HTTP/);
 });
+
+test('protected deployment exposes only same-origin proxy and Render fails closed',async()=>{
+ const {getPublicEnvironment}=await import(moduleUrl);
+ const environment={DEMO_ACCESS_ENABLED:'true',DEMO_PASSWORD:'p'.repeat(16),DEMO_SESSION_SECRET:'s'.repeat(32),BACKEND_SHARED_KEY:'k'.repeat(32),BACKEND_INTERNAL_URL:'https://backend.example',NEXT_PUBLIC_API_URL:'https://bypass.example'};
+ assert.deepEqual(getPublicEnvironment({environment,envFile:'absent'}),{NEXT_PUBLIC_API_URL:'/api/backend'});
+ assert.throws(()=>getPublicEnvironment({environment:{RENDER:'true'},envFile:'absent'}),/DEMO_ACCESS_ENABLED/);
+ assert.deepEqual(getPublicEnvironment({environment:{NEXT_PUBLIC_API_URL:'/api/backend'},envFile:'absent'}),{NEXT_PUBLIC_API_URL:'/api/backend'});
+ for(const url of ['/api/backend/other','//bypass.example','/api/backend?url=evil'])assert.throws(()=>getPublicEnvironment({environment:{NEXT_PUBLIC_API_URL:url},envFile:'absent'}));
+});

@@ -33,7 +33,7 @@ For a production preview run `npm run build`, then `npm start`.
 
 - The backend provides fictional September 2026 seed records. Quantities from newly uploaded bills are entered and confirmed manually. Matching uses question wording; no live AI or OCR is connected.
 - Records, changes, declarations and approved snapshots persist through Supabase on the backend. Original source files use Supabase Storage. Backend configuration or connection failures appear with retry/setup guidance; no fixture data is substituted.
-- Internal requests send `X-Demo-Role` for the selected owner, clerk or customer. This is simulated role authorization for a demo, not account authentication. No browser credentials are sent.
+- Internal requests send `X-Demo-Role` for the selected owner, clerk or customer. This is simulated role authorization for a demo, not account authentication. Local direct API calls omit browser credentials. Protected hosted calls use the same-origin proxy with an HttpOnly demo session cookie.
 - Internal source previews fetch the role-protected document file as a temporary blob URL. Public pack and selected evidence routes use their share token without a role header. The backend enforces which files the token can access.
 - Pack links use the frontend origin and open in another browser against the same backend. With the default localhost addresses, they work only on the same computer while both servers are running. External access requires reachable frontend/API addresses and appropriate backend CORS configuration.
 - Workspace help → Restore sample records calls the server's demo reset. It works only when the backend enables reset and affects the server demo workspace.
@@ -59,3 +59,7 @@ Use Reporting month in the header to select any calendar month. The period stays
 Records has Active and Archived views. Edit record changes its display name, assigned month and quantities without replacing its original source. Save changes leaves it unconfirmed. Confirm & calculate is explicit. Archive removes it from active calculations; Restore returns it unconfirmed. Existing approved packs retain their approved answers and selected original files.
 
 Policies in Place uses four accessible status cards, a known-status count, saved attribution in MYT, and a single attachment section. Prior-month answers are reference only. Existing attached files remain visible even after moving or archiving, so owners can remove an archived attachment before saving.
+
+## Hosted hackathon demo
+
+Follow [the Render setup guide](../../docs/DEPLOY-RENDER.md). Hosted mode uses a shared demo password, an eight-hour signed HttpOnly session and a same-origin /api/backend proxy. Server keys never reach the browser. Both workspace and customer-pack access require the demo session; pack tokens still restrict evidence. Local mode stays unchanged. The frontend start script accepts Render hostname and port arguments.
