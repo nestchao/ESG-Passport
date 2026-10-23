@@ -14,7 +14,7 @@ The frontend now calls the API. It does not fall back to browser fixtures when t
 ## Start locally
 
 1. Follow [backend setup](src/backend/README.md): create a Python environment, configure the repository-root `.env`, apply Alembic migrations, initialize private Storage and explicitly seed sample records.
-2. Run the backend on `http://127.0.0.1:8001`, matching the example environment configuration.
+2. Run the backend on `http://127.0.0.1:8001` with root NEXT_PUBLIC_API_URL set to the same address.
 3. In a second terminal:
 
 ```powershell
@@ -23,11 +23,11 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`. The example root environment sets `NEXT_PUBLIC_API_URL=http://127.0.0.1:8001`; the frontend falls back to port 8000 only when that setting is absent. Restart Next.js after changes. Match `FRONTEND_ORIGIN` in the backend to the exact frontend address and port.
+Open `http://127.0.0.1:3000`. The frontend defaults to port 8000 for its API; set `NEXT_PUBLIC_API_URL` in the repository-root `.env` if needed and restart Next.js. Match `FRONTEND_ORIGIN` in the backend to the exact frontend address and port.
 
 Keep only two environment files at the repository root: `.env` for your private local values and `.env.example` as the committed template. Copy the template only when `.env` does not already exist. The backend and Alembic read this root file explicitly; Next.js exports only its `NEXT_PUBLIC_API_URL` value. Shell environment variables take precedence. Restart both services after changing the file.
 
-Supabase credentials are backend-only settings in this shared file. Use a dedicated synthetic hackathon project. This milestone keeps the API bound to localhost; customer links can be opened in another browser while both local services run. Hosted sharing and real accounts require the later deployment/authentication work.
+Supabase credentials are backend-only settings in this shared file. Use a dedicated synthetic hackathon project. Local customer links work while both services run. For the protected synthetic hackathon deployment, follow [the Render setup guide](docs/DEPLOY-RENDER.md). Real user accounts remain deferred.
 
 ## Verify
 
@@ -38,29 +38,28 @@ Supabase credentials are backend-only settings in this shared file. Use a dedica
 Unit/integration tests inject isolated SQLite and fake storage; they do not claim that the hosted Supabase project has been verified. The running API accepts Supabase Postgres configuration only.
 
 Original evidence stays immutable. Corrections and declarations create revisions. New data invalidates draft answers, and owner approval freezes the selected answers, factor versions and evidence. No certification or compliance claim is made.
-## AI module
 
-The offline [AI workflow](src/ai/workflow/README.md) provides reviewed evidence intake,
-bilingual SEDG requirement forms, matching/coverage checks, guarded Scope 2
-calculations and preparation exports. It is not yet connected to the live backend
-or review UI. Scope 1 and fuel-to-energy calculations remain explicit gaps.
+## Hosted hackathon demo
 
-The [synthetic generator](src/ai/synthetic_generator/README.md) and four-category
-[synthetic dataset](src/ai/synthetic_dataset/README.md) are public team-created
-fixtures. Supplemental fictional staff records are in
-`src/ai/workflow/fixtures/staff_records`. They remain self-declared and unverified.
-The [OCR comparison](src/ai/comparison/README.md) reports the bounded synthetic pilot.
+[Deploy on Render and enable automatic updates](docs/DEPLOY-RENDER.md). The Blueprint creates two free services with a shared demo gate. It watches main; pushing only to Boon does not update the hosted demo. No automatic migrations, resets or seeding run.
 
-Install application dependencies from the root requirements with uv targeting an
-explicit project environment. The offline synthetic generator requires a separate
-approved environment: its Pillow 13 pin conflicts with the backend's Pillow <13
-range. Use its own requirements file; do not combine both dependency sets.
-Private research, real reference records, credentials and development notes remain
-ignored under `src/ai/.local/` and `docs/reference/`.
+## Integrated offline AI and OCR (test branch)
 
-## Project folders and licence
+The offline [PR #9 AI workflow](src/ai/workflow/README.md) is connected to
+existing questionnaire mapping, evidence coverage, preliminary preparation,
+and owner review. New image/single-page PDF uploads run offline RapidOCR to
+suggest consumption values; clerks must verify them before confirming.
 
-`docs/` holds competition documentation, `runpod/` deployment notes, `src/`
-application code, `submission/` deliverables and `tests/` AI regression checks.
-Project code uses Apache License 2.0; see LICENSE. Third-party materials retain
-their respective licences and notices.
+Owner **Approve & Share** requires explicit acknowledgement and a reason for
+**each** outstanding PR #9 limitation. Unresolved measurements remain gaps,
+not verified disclosures. The approved internal PR #9 audit/preparation is
+kept private, and public packs include only selected evidence and disclosed
+limitations. Existing demo protections on Render still apply: these are not
+production authentication or independent assurance.
+
+Run full backend and frontend tests after merging this branch with main. This
+branch does not change the project's synthetic-only demonstration scope.
+The [synthetic dataset](src/ai/synthetic_dataset/README.md),
+[generator](src/ai/synthetic_generator/README.md), and
+[OCR comparison](src/ai/comparison/README.md) are research/test material,
+not runtime data sources. The generator requires separate dependencies.

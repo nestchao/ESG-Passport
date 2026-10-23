@@ -39,3 +39,8 @@ test('duplicate conflict identifies the saved record without exposing internal m
  const api=createApiClient({fetchImpl:async()=>json({detail:existing},409)});
  await assert.rejects(api.request('/documents'),error=>error.existingDocument?.id==='saved'&&error.existingDocument.period==='2026-07'&&error.existingDocument.archived===true);
 });
+
+test('same-origin proxy requests include session credentials',async()=>{
+ let options;const api=createApiClient({baseUrl:'/api/backend',fetchImpl:async(_url,opts)=>{options=opts;return json({ok:true});}});
+ await api.request('/profile');assert.equal(options.credentials,'same-origin');
+});

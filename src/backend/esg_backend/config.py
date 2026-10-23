@@ -27,6 +27,9 @@ class Settings:
     frontend_origin: str = 'http://127.0.0.1:3000'
     company_id: str = 'lim-carton'
     allow_sample_reset: bool = False
+    demo_access_enabled: bool = False
+    backend_shared_key: str = ''
+    render_hosted: bool = False
 
     @classmethod
     def from_env(cls) -> 'Settings':
@@ -38,7 +41,19 @@ class Settings:
             storage_bucket=os.getenv('SUPABASE_STORAGE_BUCKET', 'esg-evidence').strip(),
             frontend_origin=os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:3000').strip().rstrip('/'),
             allow_sample_reset=os.getenv('ALLOW_SAMPLE_RESET', 'false').strip().lower() in ('1', 'true', 'yes'),
+            demo_access_enabled=os.getenv('DEMO_ACCESS_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes'),
+            backend_shared_key=os.getenv('BACKEND_SHARED_KEY', '').strip(),
+            render_hosted=os.getenv('RENDER', '').strip().lower() == 'true',
         )
+
+    def validate_demo_access(self) -> None:
+        """Fail closed on Render; local direct-API development stays available."""
+        if self.render_hosted and not self.demo_access_enabled:
+            raise ValueError('Render requires DEMO_ACCESS_ENABLED=true for this simulated-role demo.')
+        if self.demo_access_enabled and len(self.backend_shared_key) < 32:
+            raise ValueError('Protected demo requires BACKEND_SHARED_KEY with at least 32 characters.')
+        if self.demo_access_enabled and self.allow_sample_reset:
+            raise ValueError('Protected demo requires ALLOW_SAMPLE_RESET=false.')
 
     def validate(self) -> None:
         missing = [name for name, value in (

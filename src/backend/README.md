@@ -2,7 +2,7 @@
 
 FastAPI persists the synthetic monthly workspace in Supabase Postgres and stores original PNG/JPEG/PDF evidence in a private Supabase Storage bucket. Calculations use decimal arithmetic and confirmed activity revisions. Automatic OCR and live AI are not connected: extracted fields require manual entry and human confirmation; questionnaire suggestions use deterministic wording matching.
 
-This is a local prototype. The role switch / `X-Demo-Role` header is a demonstration of owner, clerk and customer permissions, not real authentication. Keep the API bound to `127.0.0.1`; add real identity, authorization and tenant isolation before a network deployment. Browser roles receive no direct database table privileges. Only the Python server receives the database password and Supabase server key.
+This is a local prototype. The role switch / `X-Demo-Role` header is a demonstration of owner, clerk and customer permissions, not real authentication. Keep local direct access bound to `127.0.0.1`. The [protected Render hackathon deployment](../../docs/DEPLOY-RENDER.md) adds a server key and shared website password; real-user deployment still requires identity, authorization and tenant isolation. Browser roles receive no direct database table privileges. Only the Python server receives the database password and Supabase server key.
 
 ## Windows setup
 
@@ -74,3 +74,7 @@ GET /profile, /documents, /declarations, /questionnaires and /shares accept `per
 Uploads accept a multipart period. PUT /documents/{id} accepts name, period, activities and expected_version atomically and leaves the record unconfirmed. POST /documents/{id}/archive and /restore require expected_version. Owner and clerk may use these endpoints; customers cannot. The existing PUT activities endpoint also accepts expected_version, and the frontend always sends it. Stale versions return 409. For legacy client compatibility this field remains optional on that existing endpoint only.
 
 Duplicate-file 409 responses include the existing document ID, assigned period and archive state. Archived files remain available internally and through previously approved token routes, but cannot be added to a new declaration/approval. Edits invalidate affected monthly drafts and periods with declarations referencing the changed evidence. Approved snapshots are never rewritten.
+
+## Protected hosted demo
+
+On Render, DEMO_ACCESS_ENABLED=true and BACKEND_SHARED_KEY (at least 32 characters) are required; invalid demo protection fails startup. ALLOW_SAMPLE_RESET must remain false. Every route except GET /health requires X-Demo-Backend-Key from the frontend server proxy. Existing role checks and pack-token/evidence checks still apply. See [the Render guide](../../docs/DEPLOY-RENDER.md) for setup and automatic updates.

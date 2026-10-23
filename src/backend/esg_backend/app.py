@@ -1,5 +1,6 @@
 """Local hackathon API. Simulated roles are not production authentication."""
 from contextlib import asynccontextmanager
+from secrets import compare_digest
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -18,6 +19,7 @@ from .storage import StorageError, SupabaseStorage
 
 def create_app(*, settings=None, session_factory=None, storage=None):
     settings = settings or Settings.from_env()
+    settings.validate_demo_access()
     configuration_error = None
     engine = None
     if session_factory is None:
@@ -43,6 +45,18 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     api.add_middleware(CORSMiddleware, allow_origins=[settings.frontend_origin],
                        allow_methods=['GET', 'POST', 'PUT'], allow_headers=['Content-Type', 'X-Demo-Role'])
     api.state.settings = settings
+
+    @api.middleware('http')
+    async def demo_access(request, call_next):
+        if settings.demo_access_enabled and not (request.method == 'GET' and request.url.path == '/health'):
+            supplied = request.headers.get('x-demo-backend-key', '')
+            if not compare_digest(supplied.encode('utf-8'), settings.backend_shared_key.encode('utf-8')):
+                return JSONResponse(status_code=401, content={'detail': 'Demo access required.'},
+                                    headers={'Cache-Control': 'no-store'})
+        response = await call_next(request)
+        if settings.demo_access_enabled:
+            response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
     def session():
         if configuration_error or session_factory is None:
@@ -77,7 +91,8 @@ def create_app(*, settings=None, session_factory=None, storage=None):
     @api.get('/health')
     def health():
         if configuration_error:
-            return JSONResponse(status_code=503, content={'status': 'not_configured', 'detail': configuration_error})
+            detail = 'Backend configuration unavailable.' if settings.demo_access_enabled else configuration_error
+            return JSONResponse(status_code=503, content={'status': 'not_configured', 'detail': detail})
         try:
             with session_factory() as db:
                 db.execute(text('SELECT 1'))
