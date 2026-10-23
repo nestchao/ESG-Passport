@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "bases_per_family": 15,
+  "profiles": [
+    "clean",
+    "scan",
+    "photo"
+  ],
+  "context_seed": 202610230000,
+  "layout_seed": 73000,
+  "capture_seed": 202610230000,
+  "text_effects": {
+    "erosion_blend": 0.3,
+    "mean_blur_blend": 0.45,
+    "erosion_mode": "random_per_line_uniform",
+    "erosion_range": [
+      0.12,
+      0.48
+    ]
+  },
+  "default_wear": "none",
+  "sharpness_factor": 1.0
+}

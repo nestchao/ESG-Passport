@@ -1,0 +1,851 @@
+{
+  "version": "malaysia-four-categories-v2",
+  "item_id": "fuel-pump-008-photo",
+  "base_document_id": "fuel-pump-008",
+  "category": "fuel",
+  "layout_family": "pump",
+  "split": "development",
+  "width": 642,
+  "height": 1092,
+  "language": "mixed-ms-en",
+  "period": {
+    "start": "2026-06-20",
+    "end": "2026-06-20"
+  },
+  "intended_lines": [
+    {
+      "line_id": "l001",
+      "text": "STESEN MINYAK DEMO",
+      "bbox": [
+        53.935,
+        44.92,
+        321.509,
+        61.576
+      ],
+      "polygon": [
+        [
+          53.951,
+          44.92
+        ],
+        [
+          321.509,
+          46.554
+        ],
+        [
+          321.494,
+          61.576
+        ],
+        [
+          53.935,
+          59.996
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        26.0,
+        300.0,
+        41.0
+      ]
+    },
+    {
+      "line_id": "l002",
+      "text": "MERANTI DEMO NIAGA",
+      "bbox": [
+        53.398,
+        84.114,
+        268.602,
+        96.842
+      ],
+      "polygon": [
+        [
+          53.411,
+          84.114
+        ],
+        [
+          268.602,
+          85.317
+        ],
+        [
+          268.589,
+          96.842
+        ],
+        [
+          53.398,
+          95.672
+        ]
+      ],
+      "source_bbox": [
+        29.5,
+        65.0,
+        246.5,
+        76.5
+      ]
+    },
+    {
+      "line_id": "l003",
+      "text": "LOT DEMO, JALAN REKAAN",
+      "bbox": [
+        53.851,
+        124.319,
+        276.47,
+        137.972
+      ],
+      "polygon": [
+        [
+          53.864,
+          124.319
+        ],
+        [
+          276.47,
+          125.445
+        ],
+        [
+          276.456,
+          137.972
+        ],
+        [
+          53.851,
+          136.882
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        105.0,
+        254.5,
+        117.5
+      ]
+    },
+    {
+      "line_id": "l004",
+      "text": "MALAYSIA - SEMUA DATA REKAAN",
+      "bbox": [
+        53.82,
+        154.47,
+        336.699,
+        165.804
+      ],
+      "polygon": [
+        [
+          53.831,
+          154.47
+        ],
+        [
+          336.699,
+          155.79
+        ],
+        [
+          336.689,
+          165.804
+        ],
+        [
+          53.82,
+          164.521
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        135.0,
+        315.5,
+        145.0
+      ]
+    },
+    {
+      "line_id": "l005",
+      "text": "FINAL RECEIPT / RESIT AKHIR",
+      "bbox": [
+        53.759,
+        202.714,
+        391.394,
+        221.587
+      ],
+      "polygon": [
+        [
+          53.778,
+          202.714
+        ],
+        [
+          391.394,
+          204.076
+        ],
+        [
+          391.377,
+          221.587
+        ],
+        [
+          53.759,
+          220.303
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        183.0,
+        371.0,
+        200.5
+      ]
+    },
+    {
+      "line_id": "l006",
+      "text": "No: DEMO-F-00005",
+      "bbox": [
+        53.719,
+        245.933,
+        225.391,
+        257.559
+      ],
+      "polygon": [
+        [
+          53.731,
+          245.933
+        ],
+        [
+          225.391,
+          246.528
+        ],
+        [
+          225.379,
+          257.559
+        ],
+        [
+          53.719,
+          256.989
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        226.0,
+        203.0,
+        237.0
+      ]
+    },
+    {
+      "line_id": "l007",
+      "text": "Date: 20/06/2026  08:34",
+      "bbox": [
+        53.681,
+        278.097,
+        300.03,
+        292.372
+      ],
+      "polygon": [
+        [
+          53.696,
+          278.097
+        ],
+        [
+          300.03,
+          278.847
+        ],
+        [
+          300.016,
+          292.372
+        ],
+        [
+          53.681,
+          291.666
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        258.0,
+        278.5,
+        271.5
+      ]
+    },
+    {
+      "line_id": "l008",
+      "text": "Pump: 02     Cashier: DEMO",
+      "bbox": [
+        53.644,
+        310.261,
+        332.096,
+        326.013
+      ],
+      "polygon": [
+        [
+          53.661,
+          310.261
+        ],
+        [
+          332.096,
+          310.991
+        ],
+        [
+          332.08,
+          326.013
+        ],
+        [
+          53.644,
+          325.338
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        290.0,
+        311.0,
+        305.0
+      ]
+    },
+    {
+      "line_id": "l009",
+      "text": "PRODUCT: DIESEL",
+      "bbox": [
+        53.581,
+        370.57,
+        250.002,
+        383.461
+      ],
+      "polygon": [
+        [
+          53.595,
+          370.57
+        ],
+        [
+          250.002,
+          370.929
+        ],
+        [
+          249.989,
+          383.461
+        ],
+        [
+          53.581,
+          383.134
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        350.0,
+        228.0,
+        362.5
+      ]
+    },
+    {
+      "line_id": "l010",
+      "text": "Volume: 45.570 L",
+      "bbox": [
+        53.531,
+        415.802,
+        253.417,
+        429.082
+      ],
+      "polygon": [
+        [
+          53.545,
+          415.802
+        ],
+        [
+          253.417,
+          416.049
+        ],
+        [
+          253.404,
+          429.082
+        ],
+        [
+          53.531,
+          428.869
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        395.0,
+        231.5,
+        408.0
+      ]
+    },
+    {
+      "line_id": "l011",
+      "text": "Price/L: RM 3.25",
+      "bbox": [
+        53.485,
+        456.009,
+        243.975,
+        471.185
+      ],
+      "polygon": [
+        [
+          53.501,
+          456.009
+        ],
+        [
+          243.975,
+          456.144
+        ],
+        [
+          243.959,
+          471.185
+        ],
+        [
+          53.485,
+          471.087
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        435.0,
+        222.0,
+        450.0
+      ]
+    },
+    {
+      "line_id": "l012",
+      "text": "Fuel amount: RM 148.10",
+      "bbox": [
+        53.444,
+        496.217,
+        315.116,
+        508.787
+      ],
+      "polygon": [
+        [
+          53.457,
+          496.217
+        ],
+        [
+          315.116,
+          496.265
+        ],
+        [
+          315.103,
+          508.787
+        ],
+        [
+          53.444,
+          508.783
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        475.0,
+        294.0,
+        487.5
+      ]
+    },
+    {
+      "line_id": "l013",
+      "text": "Subtotal     RM 148.10",
+      "bbox": [
+        326.897,
+        551.214,
+        586.699,
+        563.876
+      ],
+      "polygon": [
+        [
+          326.91,
+          551.355
+        ],
+        [
+          586.699,
+          551.214
+        ],
+        [
+          586.687,
+          563.691
+        ],
+        [
+          326.897,
+          563.876
+        ]
+      ],
+      "source_bbox": [
+        306.0,
+        530.0,
+        570.0,
+        542.5
+      ]
+    },
+    {
+      "line_id": "l014",
+      "text": "Rounding     RM +0.00",
+      "bbox": [
+        363.37,
+        591.142,
+        586.66,
+        606.399
+      ],
+      "polygon": [
+        [
+          363.386,
+          591.382
+        ],
+        [
+          586.66,
+          591.142
+        ],
+        [
+          586.645,
+          606.115
+        ],
+        [
+          363.37,
+          606.399
+        ]
+      ],
+      "source_bbox": [
+        343.0,
+        570.0,
+        570.0,
+        585.0
+      ]
+    },
+    {
+      "line_id": "l015",
+      "text": "GRAND TOTAL  RM 148.10",
+      "bbox": [
+        300.636,
+        631.071,
+        586.621,
+        645.056
+      ],
+      "polygon": [
+        [
+          300.65,
+          631.528
+        ],
+        [
+          586.621,
+          631.071
+        ],
+        [
+          586.608,
+          644.547
+        ],
+        [
+          300.636,
+          645.056
+        ]
+      ],
+      "source_bbox": [
+        279.5,
+        610.0,
+        570.0,
+        623.5
+      ]
+    },
+    {
+      "line_id": "l016",
+      "text": "Payment: DEMO WALLET",
+      "bbox": [
+        53.238,
+        681.704,
+        267.481,
+        696.262
+      ],
+      "polygon": [
+        [
+          53.254,
+          682.188
+        ],
+        [
+          267.481,
+          681.704
+        ],
+        [
+          267.466,
+          695.738
+        ],
+        [
+          53.238,
+          696.262
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        660.0,
+        246.0,
+        674.0
+      ]
+    },
+    {
+      "line_id": "l017",
+      "text": "Amount paid  RM 148.10",
+      "bbox": [
+        352.88,
+        716.92,
+        586.536,
+        732.579
+      ],
+      "polygon": [
+        [
+          352.896,
+          717.559
+        ],
+        [
+          586.536,
+          716.92
+        ],
+        [
+          586.521,
+          731.894
+        ],
+        [
+          352.88,
+          732.579
+        ]
+      ],
+      "source_bbox": [
+        332.5,
+        696.0,
+        570.0,
+        711.0
+      ]
+    },
+    {
+      "line_id": "l018",
+      "text": "REKAAN / SYNTHETIC - NOT PAYABLE",
+      "bbox": [
+        52.909,
+        981.898,
+        357.557,
+        997.365
+      ],
+      "polygon": [
+        [
+          52.924,
+          983.792
+        ],
+        [
+          357.557,
+          981.898
+        ],
+        [
+          357.543,
+          995.417
+        ],
+        [
+          52.909,
+          997.365
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        960.0,
+        337.5,
+        973.5
+      ]
+    },
+    {
+      "line_id": "l019",
+      "text": "Prices illustrative, not official.",
+      "bbox": [
+        52.873,
+        1016.957,
+        356.041,
+        1030.544
+      ],
+      "polygon": [
+        [
+          52.885,
+          1018.982
+        ],
+        [
+          356.041,
+          1016.957
+        ],
+        [
+          356.029,
+          1028.473
+        ],
+        [
+          52.873,
+          1030.544
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        995.0,
+        336.0,
+        1006.5
+      ]
+    }
+  ],
+  "expected_fields": [
+    {
+      "field": "diesel_consumption",
+      "value": "45.57",
+      "unit": "L",
+      "role": "activity",
+      "period": {
+        "start": "2026-06-20",
+        "end": "2026-06-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l010",
+          "text": "Volume: 45.570 L"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "fuel_unit_price",
+      "value": "3.25",
+      "unit": "MYR/L",
+      "role": "context",
+      "period": {
+        "start": "2026-06-20",
+        "end": "2026-06-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l011",
+          "text": "Price/L: RM 3.25"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "fuel_amount",
+      "value": "148.10",
+      "unit": "MYR",
+      "role": "context",
+      "period": {
+        "start": "2026-06-20",
+        "end": "2026-06-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l012",
+          "text": "Fuel amount: RM 148.10"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "rounded_total",
+      "value": "148.10",
+      "unit": "MYR",
+      "role": "context",
+      "period": {
+        "start": "2026-06-20",
+        "end": "2026-06-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l015",
+          "text": "GRAND TOTAL  RM 148.10"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    }
+  ],
+  "transforms": {
+    "seed": 202610230682,
+    "profile": "photo",
+    "erosion_kernel": 3,
+    "dropout_probability": 0,
+    "brightness_factor": 1.0513343184944643,
+    "sharpness_factor": 1.0,
+    "blur_sigma": null,
+    "order": [
+      "random_per_line_uniform_erosion",
+      "text_mean_blur",
+      "brightness_increase",
+      "fixed_sharpness",
+      "capture"
+    ],
+    "text_erosion": "random strength per text line, uniform across each line",
+    "erosion_blend": 0.3,
+    "blur_type": "arithmetic_mean_box",
+    "blur_kernel": [
+      3,
+      3
+    ],
+    "mean_blur_blend": 0.45,
+    "effects_scope": "text ink only; intended glyph boxes retained, filter footprint may extend 1px",
+    "erosion_mode": "random_per_line_uniform",
+    "erosion_range": [
+      0.12,
+      0.48
+    ],
+    "line_erosion": {
+      "l001": 0.4,
+      "l002": 0.38,
+      "l003": 0.48,
+      "l004": 0.33999999999999997,
+      "l005": 0.18,
+      "l006": 0.32,
+      "l007": 0.28,
+      "l008": 0.44,
+      "l009": 0.3,
+      "l010": 0.42,
+      "l011": 0.16,
+      "l012": 0.36,
+      "l013": 0.26,
+      "l014": 0.46,
+      "l015": 0.22,
+      "l016": 0.24,
+      "l017": 0.13999999999999999,
+      "l018": 0.2,
+      "l019": 0.12
+    },
+    "mean_line_erosion": 0.3,
+    "erosion_seed": 202610960701,
+    "page_corners": [
+      [
+        24.134748852180753,
+        18.59756009560049
+      ],
+      [
+        616.6261723399275,
+        22.417391781293734
+      ],
+      [
+        615.6005512535645,
+        1070.1125065663734
+      ],
+      [
+        22.97295394495295,
+        1074.5020693018341
+      ]
+    ],
+    "rgb_gain": [
+      0.96,
+      0.98,
+      1.0
+    ],
+    "capture": "mild perspective, warm/cool light and gradient shadow",
+    "forward_homography": [
+      [
+        0.9955375746869993,
+        -0.001111202032486359,
+        24.134748852180753
+      ],
+      [
+        0.0066591111474015585,
+        1.0054020758833049,
+        18.59756009560049
+      ],
+      [
+        1.3057942129724079e-05,
+        -2.0592442228970867e-07,
+        1.0
+      ]
+    ]
+  },
+  "source_real_pixels_used": false,
+  "human_visibility_review": "pending",
+  "label_status": "intended text; provisional visibility and temporal labels",
+  "supporting_fields": {
+    "demo_subsidy_amount": "0.00",
+    "subtotal": "148.10",
+    "payment_method": "DEMO WALLET",
+    "rounding_adjustment": "0.00",
+    "gross_vs_net_policy": "fuel_amount is gross product amount; rounded_total is payable after illustrative subsidy and rounding"
+  },
+  "arithmetic_checks": [
+    {
+      "equation": "litres * posted price = gross",
+      "lhs": "148.10",
+      "rhs": "148.10"
+    },
+    {
+      "equation": "gross - demo subsidy = subtotal",
+      "lhs": "148.10",
+      "rhs": "148.10"
+    }
+  ],
+  "not_official": "Fictional identities, prices and quantities. Not official tariff or subsidy guidance.",
+  "augmentation_revision": "random-per-line-text-erosion-v1"
+}

@@ -1,0 +1,43 @@
+{
+  "dataset": "malaysia-four-categories-v2",
+  "generation": "Original code-drawn layouts, seeded fictional records, no API calls.",
+  "source_real_pixels_used": false,
+  "third_party_images_included": false,
+  "third_party_fonts_included": false,
+  "license": "Repository Apache-2.0 covers original generator code and synthetic image/label contributions. Third-party reference assets are not redistributed.",
+  "reference_use": "Structural inspiration only; no original pixels, logos, real identities or account details copied. No redistribution license is assumed for linked originals.",
+  "references": [
+    {
+      "category": "electricity",
+      "url": "https://www.solarsunyield.com/latestnews/nid/171135/",
+      "scope": "Published bill layout; authenticity not independently verified."
+    },
+    {
+      "category": "water",
+      "url": "https://www.sc.com/my/sample-bills/n-s/syabas/",
+      "scope": "Historical bank-hosted specimen layout; not a claim about current tariffs."
+    },
+    {
+      "category": "fuel",
+      "url": "https://www.thestar.com.my/news/nation/2026/03/14/shocked-and-then-thankful",
+      "scope": "Published receipt layout; synthetic subsidy/price values are illustrative."
+    },
+    {
+      "category": "waste",
+      "url": "https://www.kbb.net.my/Portfolio/Details/84",
+      "scope": "Malaysian quarry weighbridge analogue, not verified as a waste ticket."
+    },
+    {
+      "category": "waste",
+      "url": "https://www.env.go.jp/earth/coop/lowcarbon-asia/english/project/data/EN_MYS_2022_03.pdf",
+      "scope": "Malaysia waste-project report, PDF page 120; weighbridge field structure."
+    }
+  ],
+  "limitations": [
+    "No real-world OCR validity or distribution match established.",
+    "Visibility review pending; labels describe intended content.",
+    "Candidate splits share layout families.",
+    "Rates, identities and quantities are fictional, not official Malaysian tariffs or regulated forms.",
+    "Natural wear is an optional procedural approximation and is not applied to the published default dataset."
+  ]
+}

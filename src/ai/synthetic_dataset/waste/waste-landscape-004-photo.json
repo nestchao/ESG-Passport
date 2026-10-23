@@ -1,0 +1,949 @@
+{
+  "version": "malaysia-four-categories-v2",
+  "item_id": "waste-landscape-004-photo",
+  "base_document_id": "waste-landscape-004",
+  "category": "waste",
+  "layout_family": "landscape",
+  "split": "development",
+  "width": 1132,
+  "height": 792,
+  "language": "mixed-ms-en",
+  "period": {
+    "start": "2026-02-20",
+    "end": "2026-02-20"
+  },
+  "intended_lines": [
+    {
+      "line_id": "l001",
+      "text": "PUSAT TIMBANG DEMO MERANTI",
+      "bbox": [
+        59.128,
+        55.143,
+        467.482,
+        72.218
+      ],
+      "polygon": [
+        [
+          59.128,
+          55.143
+        ],
+        [
+          467.43,
+          56.764
+        ],
+        [
+          467.482,
+          72.218
+        ],
+        [
+          59.135,
+          70.676
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        28.0,
+        435.5,
+        43.5
+      ]
+    },
+    {
+      "line_id": "l002",
+      "text": "SLIP TIMBANG SISA / WASTE WEIGHBRIDGE",
+      "bbox": [
+        59.148,
+        97.24,
+        483.651,
+        113.163
+      ],
+      "polygon": [
+        [
+          59.148,
+          97.24
+        ],
+        [
+          483.601,
+          98.701
+        ],
+        [
+          483.651,
+          113.163
+        ],
+        [
+          59.154,
+          111.779
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        70.0,
+        451.5,
+        84.5
+      ]
+    },
+    {
+      "line_id": "l003",
+      "text": "LOT DEMO, JALAN REKAAN, MALAYSIA",
+      "bbox": [
+        59.164,
+        132.339,
+        369.374,
+        145.262
+      ],
+      "polygon": [
+        [
+          59.164,
+          132.339
+        ],
+        [
+          369.342,
+          133.271
+        ],
+        [
+          369.374,
+          145.262
+        ],
+        [
+          59.169,
+          144.378
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        105.0,
+        337.5,
+        117.0
+      ]
+    },
+    {
+      "line_id": "l004",
+      "text": "REKAAN / SYNTHETIC",
+      "bbox": [
+        891.901,
+        60.433,
+        1073.448,
+        75.001
+      ],
+      "polygon": [
+        [
+          891.901,
+          60.433
+        ],
+        [
+          1073.341,
+          61.149
+        ],
+        [
+          1073.448,
+          75.001
+        ],
+        [
+          891.99,
+          74.317
+        ]
+      ],
+      "source_bbox": [
+        861.5,
+        30.0,
+        1045.0,
+        44.0
+      ]
+    },
+    {
+      "line_id": "l005",
+      "text": "Tarikh: 20/02/2026",
+      "bbox": [
+        59.192,
+        192.551,
+        255.777,
+        206.514
+      ],
+      "polygon": [
+        [
+          59.192,
+          192.551
+        ],
+        [
+          255.751,
+          192.993
+        ],
+        [
+          255.777,
+          206.514
+        ],
+        [
+          59.198,
+          206.106
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        165.0,
+        224.5,
+        178.5
+      ]
+    },
+    {
+      "line_id": "l006",
+      "text": "Tiket: DEMO-W-00005",
+      "bbox": [
+        762.096,
+        194.13,
+        966.178,
+        206.004
+      ],
+      "polygon": [
+        [
+          762.096,
+          194.13
+        ],
+        [
+          966.098,
+          194.588
+        ],
+        [
+          966.178,
+          206.004
+        ],
+        [
+          762.158,
+          205.575
+        ]
+      ],
+      "source_bbox": [
+        730.0,
+        165.0,
+        935.5,
+        176.5
+      ]
+    },
+    {
+      "line_id": "l007",
+      "text": "KEDAI DEMO MERANTI",
+      "bbox": [
+        59.21,
+        232.722,
+        255.846,
+        243.586
+      ],
+      "polygon": [
+        [
+          59.21,
+          232.722
+        ],
+        [
+          255.826,
+          233.064
+        ],
+        [
+          255.846,
+          243.586
+        ],
+        [
+          59.215,
+          243.27
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        205.0,
+        224.5,
+        215.5
+      ]
+    },
+    {
+      "line_id": "l008",
+      "text": "Kenderaan: DEMO-TRUCK",
+      "bbox": [
+        762.314,
+        233.946,
+        975.359,
+        244.744
+      ],
+      "polygon": [
+        [
+          762.314,
+          233.946
+        ],
+        [
+          975.287,
+          234.317
+        ],
+        [
+          975.359,
+          244.744
+        ],
+        [
+          762.371,
+          244.402
+        ]
+      ],
+      "source_bbox": [
+        730.0,
+        205.0,
+        944.5,
+        215.5
+      ]
+    },
+    {
+      "line_id": "l009",
+      "text": "Bahan: CARDBOARD",
+      "bbox": [
+        59.23,
+        274.925,
+        234.231,
+        286.17
+      ],
+      "polygon": [
+        [
+          59.23,
+          274.925
+        ],
+        [
+          234.212,
+          275.137
+        ],
+        [
+          234.231,
+          286.17
+        ],
+        [
+          59.235,
+          285.982
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        247.0,
+        203.0,
+        258.0
+      ]
+    },
+    {
+      "line_id": "l010",
+      "text": "Tujuan: RECYCLING",
+      "bbox": [
+        59.249,
+        315.142,
+        244.906,
+        330.326
+      ],
+      "polygon": [
+        [
+          59.249,
+          315.142
+        ],
+        [
+          244.879,
+          315.274
+        ],
+        [
+          244.906,
+          330.326
+        ],
+        [
+          59.256,
+          330.23
+        ]
+      ],
+      "source_bbox": [
+        30.0,
+        287.0,
+        213.5,
+        302.0
+      ]
+    },
+    {
+      "line_id": "l011",
+      "text": "GROSS / BERAT KASAR",
+      "bbox": [
+        69.429,
+        393.559,
+        323.241,
+        410.243
+      ],
+      "polygon": [
+        [
+          69.429,
+          393.63
+        ],
+        [
+          323.203,
+          393.559
+        ],
+        [
+          323.241,
+          410.119
+        ],
+        [
+          69.438,
+          410.243
+        ]
+      ],
+      "source_bbox": [
+        40.0,
+        365.0,
+        291.0,
+        381.5
+      ]
+    },
+    {
+      "line_id": "l012",
+      "text": "18,450 kg",
+      "bbox": [
+        733.275,
+        393.41,
+        856.878,
+        411.916
+      ],
+      "polygon": [
+        [
+          733.275,
+          393.445
+        ],
+        [
+          856.765,
+          393.41
+        ],
+        [
+          856.878,
+          411.853
+        ],
+        [
+          733.372,
+          411.916
+        ]
+      ],
+      "source_bbox": [
+        700.0,
+        365.0,
+        824.0,
+        383.5
+      ]
+    },
+    {
+      "line_id": "l013",
+      "text": "TARE / BERAT KENDERAAN",
+      "bbox": [
+        69.455,
+        441.709,
+        363.162,
+        458.593
+      ],
+      "polygon": [
+        [
+          69.455,
+          441.969
+        ],
+        [
+          363.118,
+          441.709
+        ],
+        [
+          363.162,
+          458.272
+        ],
+        [
+          69.464,
+          458.593
+        ]
+      ],
+      "source_bbox": [
+        40.0,
+        413.0,
+        330.5,
+        429.5
+      ]
+    },
+    {
+      "line_id": "l014",
+      "text": "9,260 kg",
+      "bbox": [
+        733.527,
+        441.283,
+        843.74,
+        459.865
+      ],
+      "polygon": [
+        [
+          733.527,
+          441.381
+        ],
+        [
+          843.628,
+          441.283
+        ],
+        [
+          843.74,
+          459.742
+        ],
+        [
+          733.625,
+          459.865
+        ]
+      ],
+      "source_bbox": [
+        700.0,
+        413.0,
+        810.5,
+        431.5
+      ]
+    },
+    {
+      "line_id": "l015",
+      "text": "NET / BERAT BERSIH",
+      "bbox": [
+        68.976,
+        495.008,
+        309.863,
+        513.532
+      ],
+      "polygon": [
+        [
+          68.976,
+          495.383
+        ],
+        [
+          309.823,
+          495.008
+        ],
+        [
+          309.863,
+          513.103
+        ],
+        [
+          68.986,
+          513.532
+        ]
+      ],
+      "source_bbox": [
+        39.5,
+        466.0,
+        277.5,
+        484.0
+      ]
+    },
+    {
+      "line_id": "l016",
+      "text": "9,190 kg",
+      "bbox": [
+        733.806,
+        494.177,
+        844.06,
+        512.846
+      ],
+      "polygon": [
+        [
+          733.806,
+          494.348
+        ],
+        [
+          843.948,
+          494.177
+        ],
+        [
+          844.06,
+          512.649
+        ],
+        [
+          733.904,
+          512.846
+        ]
+      ],
+      "source_bbox": [
+        700.0,
+        466.0,
+        810.5,
+        484.5
+      ]
+    },
+    {
+      "line_id": "l017",
+      "text": "Price/tonne: RM 58.00",
+      "bbox": [
+        69.521,
+        564.422,
+        299.408,
+        578.606
+      ],
+      "polygon": [
+        [
+          69.521,
+          564.981
+        ],
+        [
+          299.378,
+          564.422
+        ],
+        [
+          299.408,
+          578.008
+        ],
+        [
+          69.528,
+          578.606
+        ]
+      ],
+      "source_bbox": [
+        40.0,
+        535.0,
+        267.0,
+        548.5
+      ]
+    },
+    {
+      "line_id": "l018",
+      "text": "Amount: RM 533.02",
+      "bbox": [
+        733.67,
+        562.872,
+        937.451,
+        575.877
+      ],
+      "polygon": [
+        [
+          733.67,
+          563.367
+        ],
+        [
+          937.367,
+          562.872
+        ],
+        [
+          937.451,
+          575.35
+        ],
+        [
+          733.736,
+          575.877
+        ]
+      ],
+      "source_bbox": [
+        699.5,
+        535.0,
+        904.0,
+        547.5
+      ]
+    },
+    {
+      "line_id": "l019",
+      "text": "Operator: DEMO        Received by: DEMO",
+      "bbox": [
+        69.564,
+        644.375,
+        471.979,
+        660.413
+      ],
+      "polygon": [
+        [
+          69.564,
+          645.761
+        ],
+        [
+          471.929,
+          644.375
+        ],
+        [
+          471.979,
+          658.953
+        ],
+        [
+          69.572,
+          660.413
+        ]
+      ],
+      "source_bbox": [
+        40.0,
+        615.0,
+        438.0,
+        629.5
+      ]
+    },
+    {
+      "line_id": "l020",
+      "text": "Declared route only; not proof of completed disposal or recovery.",
+      "bbox": [
+        69.587,
+        686.369,
+        531.95,
+        702.869
+      ],
+      "polygon": [
+        [
+          69.587,
+          688.208
+        ],
+        [
+          531.894,
+          686.369
+        ],
+        [
+          531.95,
+          700.944
+        ],
+        [
+          69.595,
+          702.869
+        ]
+      ],
+      "source_bbox": [
+        40.0,
+        657.0,
+        497.5,
+        671.5
+      ]
+    },
+    {
+      "line_id": "l021",
+      "text": "All weights fictional. Not a scheduled-waste consignment note.",
+      "bbox": [
+        69.1,
+        726.653,
+        516.523,
+        743.329
+      ],
+      "polygon": [
+        [
+          69.1,
+          728.66
+        ],
+        [
+          516.468,
+          726.653
+        ],
+        [
+          516.523,
+          741.24
+        ],
+        [
+          69.108,
+          743.329
+        ]
+      ],
+      "source_bbox": [
+        39.5,
+        697.0,
+        482.0,
+        711.5
+      ]
+    }
+  ],
+  "expected_fields": [
+    {
+      "field": "declared_destination",
+      "value": "recycling",
+      "unit": null,
+      "role": "context",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l010",
+          "text": "Tujuan: RECYCLING"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "gross_weight",
+      "value": "18450",
+      "unit": "kg",
+      "role": "context",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l012",
+          "text": "18,450 kg"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "tare_weight",
+      "value": "9260",
+      "unit": "kg",
+      "role": "context",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l014",
+          "text": "9,260 kg"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "waste_transferred",
+      "value": "9190",
+      "unit": "kg",
+      "role": "activity",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l016",
+          "text": "9,190 kg"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "waste_unit_price",
+      "value": "58",
+      "unit": "MYR/t",
+      "role": "context",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l017",
+          "text": "Price/tonne: RM 58.00"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    },
+    {
+      "field": "waste_charge",
+      "value": "533.02",
+      "unit": "MYR",
+      "role": "context",
+      "period": {
+        "start": "2026-02-20",
+        "end": "2026-02-20"
+      },
+      "evidence": [
+        {
+          "line_id": "l018",
+          "text": "Amount: RM 533.02"
+        }
+      ],
+      "temporal_semantics": "point_date"
+    }
+  ],
+  "transforms": {
+    "seed": 202610231092,
+    "profile": "photo",
+    "erosion_kernel": 3,
+    "dropout_probability": 0,
+    "brightness_factor": 1.0472903838882333,
+    "sharpness_factor": 1.0,
+    "blur_sigma": null,
+    "order": [
+      "random_per_line_uniform_erosion",
+      "text_mean_blur",
+      "brightness_increase",
+      "fixed_sharpness",
+      "capture"
+    ],
+    "text_erosion": "random strength per text line, uniform across each line",
+    "erosion_blend": 0.3,
+    "blur_type": "arithmetic_mean_box",
+    "blur_kernel": [
+      3,
+      3
+    ],
+    "mean_blur_blend": 0.45,
+    "effects_scope": "text ink only; intended glyph boxes retained, filter footprint may extend 1px",
+    "erosion_mode": "random_per_line_uniform",
+    "erosion_range": [
+      0.12,
+      0.48
+    ],
+    "line_erosion": {
+      "l001": 0.22799999999999998,
+      "l002": 0.246,
+      "l003": 0.426,
+      "l004": 0.12,
+      "l005": 0.3,
+      "l006": 0.44399999999999995,
+      "l007": 0.282,
+      "l008": 0.372,
+      "l009": 0.31799999999999995,
+      "l010": 0.264,
+      "l011": 0.21,
+      "l012": 0.408,
+      "l013": 0.46199999999999997,
+      "l014": 0.13799999999999998,
+      "l015": 0.156,
+      "l016": 0.192,
+      "l017": 0.38999999999999996,
+      "l018": 0.48,
+      "l019": 0.354,
+      "l020": 0.174,
+      "l021": 0.33599999999999997
+    },
+    "mean_line_erosion": 0.30000000000000004,
+    "erosion_seed": 202610961111,
+    "page_corners": [
+      [
+        28.746561265645973,
+        26.961224268426456
+      ],
+      [
+        1107.617474438845,
+        31.625707187840923
+      ],
+      [
+        1113.462595509782,
+        766.914439341451
+      ],
+      [
+        28.93059992843041,
+        772.3717866381976
+      ]
+    ],
+    "rgb_gain": [
+      0.96,
+      0.98,
+      1.0
+    ],
+    "capture": "mild perspective, warm/cool light and gradient shadow",
+    "forward_homography": [
+      [
+        1.0130320585871082,
+        4.173691885402713e-05,
+        28.746561265645973
+      ],
+      [
+        0.004720919588842302,
+        1.0017861707807907,
+        26.961224268426456
+      ],
+      [
+        1.2709721250828862e-05,
+        -7.15380867706216e-06,
+        1.0
+      ]
+    ]
+  },
+  "source_real_pixels_used": false,
+  "human_visibility_review": "pending",
+  "label_status": "intended text; provisional visibility and temporal labels",
+  "supporting_fields": {},
+  "arithmetic_checks": [
+    {
+      "equation": "gross - tare = net",
+      "lhs": 9190,
+      "rhs": 9190
+    },
+    {
+      "equation": "net / 1000 * rate = amount",
+      "lhs": "533.02",
+      "rhs": "533.02"
+    }
+  ],
+  "not_official": "Fictional identities, prices and quantities. Not official tariff or subsidy guidance.",
+  "augmentation_revision": "random-per-line-text-erosion-v1"
+}
