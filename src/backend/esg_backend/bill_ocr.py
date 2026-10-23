@@ -17,13 +17,13 @@ UNITS = {
     'kg': 'kg', 'tonnes': 't', 'tonne': 't', 'tons': 't',
     'ton': 't', 't': 't',
 }
-UNIT_PATTERN = r'(?:kWh|m3|m³|litres?|liters?|kg|tonnes?|tons?|\bL\b|\bt\b)'
+UNIT_PATTERN = r'(?:kWh|m3|m³|litres?|liters?|kg|tonnes?|tons?|L\b|t\b)'
 VALUE_UNIT = re.compile(r'(?<![\w./])([0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)\s*(' + UNIT_PATTERN + r')(?![\w/])', re.I)
 DATE_PATTERN = re.compile(r'(?<!\d)(?:20\d{2}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]20\d{2})(?!\d)')
 LABELS = {'electricity': r'electricity|electric|usage|consum|penggunaan|kegunaan|tenaga|ringkasan|total|jumlah',
           'water': r'water|air|usage|consum|withdraw|volume|penggunaan|kegunaan|total|jumlah',
-          'diesel': r'diesel|fuel|bahan api|litre|total|jumlah',
-          'petrol': r'petrol|gasoline|fuel|bahan api|litre|total|jumlah',
+          'diesel': r'diesel|fuel|bahan api|litre|volume|isipadu|total|jumlah',
+          'petrol': r'petrol|gasoline|fuel|bahan api|litre|volume|isipadu|total|jumlah',
           'waste_generated': r'generated|generation|dijana|total waste|jumlah sisa',
           'waste_diverted': r'diverted|diversion|recycl|dikitar|dialih',
           'waste_disposed': r'dispos|dilupus|landfill'}
@@ -46,7 +46,7 @@ def _period(lines, month):
     year, number = map(int, month.split('-'))
     start, end = date(year, number, 1), date(year, number, monthrange(year, number)[1])
     for line in lines:
-        if not re.search(r'\b(?:billing\s*period|bill\s*period|reading\s*period|usage\s*period|tempoh\s*bil|tempoh\s*penggunaan|period\s*of\s*supply)', line, re.I):
+        if not re.search(r'\b(?:billing\s*period|bill\s*period|reading\s*period|usage\s*period|tempoh\s*bil|tempoh\s*penggunaan|tempoh\s*:|period\s*of\s*supply)', line, re.I):
             continue
         found = [_date(value) for value in DATE_PATTERN.findall(line)]
         found = [d for d in found if d]
@@ -60,6 +60,16 @@ def parse_bill_text(lines, category, month):
     notes = ['OCR candidates are unverified. Check the original document before confirming.']
     clean_lines = [re.sub(r'\s+', ' ', line).strip() for line in lines if line and line.strip()]
     first, last, period_found = _period(clean_lines, month)
+    # Fuel pump slips and waste tickets typically specify a point date, not a
+    # multi-day billing period. Use the explicitly printed receipt date only.
+    if not period_found and category in ('petrol', 'diesel', 'waste'):
+        for line in clean_lines:
+            if re.search(r'^\s*(?:date|tarikh)\s*:', line, re.I):
+                dates = [_date(value) for value in DATE_PATTERN.findall(line)]
+                if dates and dates[0]:
+                    first = last = dates[0]
+                    period_found = True
+                    break
     if not period_found:
         notes.append('Billing-period dates were not reliably identified; the selected reporting month is a placeholder.')
     elif first.strftime('%Y-%m') != month or last.strftime('%Y-%m') != month:
@@ -75,6 +85,13 @@ def parse_bill_text(lines, category, month):
             labelled = bool(re.search(LABELS[kind], line, re.I))
             if not labelled and index:
                 labelled = bool(re.search(LABELS[kind], clean_lines[index - 1], re.I))
+            # Some synthetic statements put the consumption label immediately
+            # AFTER its numeric value. Only accept specific usage headings;
+            # generic "total" on the following line is not strong evidence.
+            if not labelled and kind in ('electricity', 'water') and index + 1 < len(clean_lines):
+                labelled = bool(re.search(
+                    r'energy|usage|consum|penggunaan|tenaga|kegunaan',
+                    clean_lines[index + 1], re.I))
             if not labelled:
                 continue
             for match in VALUE_UNIT.finditer(line):
@@ -89,6 +106,18 @@ def parse_bill_text(lines, category, month):
                         continue
                 value = match.group(1).replace(',', '')
                 candidates.append((value, unit, line))
+        # A water bill may contain a reading table whose consumption heading
+        # is several lines above the sole printed m3 total. Never guess when
+        # there is more than one volume anywhere in the source.
+        if kind == 'water' and not candidates:
+            printed = [(m.group(1).replace(',', ''), UNITS.get(m.group(2).lower()), i, line)
+                       for i, line in enumerate(clean_lines) for m in VALUE_UNIT.finditer(line)]
+            printed = [(v, u, i, line) for v, u, i, line in printed if u in EXPECTED[kind]]
+            if len(printed) == 1:
+                value, unit, index, line = printed[0]
+                context = ' '.join(clean_lines[max(0, index - 8):index])
+                if re.search(r'penggunaan|consum|water\s+usage', context, re.I):
+                    candidates.append((value, unit, line))
         unique = {(value, unit) for value, unit, _ in candidates}
         if len(unique) == 1:
             value, unit, line = candidates[0]
@@ -100,6 +129,8 @@ def parse_bill_text(lines, category, month):
             notes.append(f'{kind}: multiple different quantities found; left blank for manual entry.')
         else:
             notes.append(f'{kind}: no clearly labelled quantity and unit found; enter manually.')
+    if category == 'waste' and not activities:
+        notes.append('Transfer weights and declared destinations do not prove waste generated, diverted, or disposed; enter only the verified category and net quantity.')
     document_date = None
     for line in clean_lines:
         if re.search(r'\b(?:invoice date|bill date|issued on|tarikh bil)\b', line, re.I):
