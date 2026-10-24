@@ -94,8 +94,10 @@ Gemini/Grafilab/fallback mode and extracted fields still require manual review.
 
 **Security trade-off:** the live demonstration workspace is shared. Anonymous
 visitors can read, create, edit and approve *fictional test records* using
-simulated roles. The proxy rejects permanent DELETE and demo/reset actions and
-uses per-instance, best-effort request limits for public writes and AI OCR.
+simulated roles. The proxy allows permanent DELETE requests to the existing backend but still
+rejects demo/reset actions. It uses per-instance, best-effort request limits
+for public writes and AI OCR. Anonymous visitors can permanently delete shared
+fictional records.
 These limits are not real identity or tenant authorization and do not protect
 private/customer records. Never put confidential documents in the demo.
 

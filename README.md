@@ -72,7 +72,7 @@ flowchart LR
 | **[Public fictional demo](https://esg-passport-web.onrender.com/demo)** (`/demo`) | Explore guided sample scenarios without a password or backend account. | Browser-only fictional state; **no Supabase access** or remote AI requests. |
 | **[Browser OCR scanner](https://esg-passport-web.onrender.com/ocr)** (`/ocr`) | Extract and review text from images or PDFs locally in your browser; export a JSON review. | Browser only; **does not create a Supabase record**. |
 
-The homepage `/` and alias `/live` are **passwordless** for Hackathon visitors. They use the existing server-only backend key, not browser-held Supabase or AI credentials. This is one shared **fictional** company workspace: visitors can view and edit its data, so never upload real or confidential bills. Owner/clerk roles are simulated. Permanent deletion and demo reset are unavailable to public visitors, and public writes/OCR calls are rate-limited.
+The homepage `/` and alias `/live` are **passwordless** for Hackathon visitors. They use the existing server-only backend key, not browser-held Supabase or AI credentials. This is one shared **fictional** company workspace: visitors can view and edit its data, so never upload real or confidential bills. Owner/clerk roles are simulated. Permanent Delete is available through the existing backend API; demo reset remains disabled, and public writes/OCR calls are rate-limited. Because access is passwordless, visitors may permanently delete shared fictional records.
 
 ### Example evidence
 
@@ -252,7 +252,7 @@ ESG-Passport/
 
 ## Limitations
 
-The public interactive workspace is intentionally passwordless and shared. Anyone with the URL can view or change test records; do not use this demo with sensitive or private company data. The frontend denies permanent deletion and resetting; rate limits are best-effort, per instance and not a substitute for user authentication or isolated data. External OCR can consume API quota.
+The public interactive workspace is intentionally passwordless and shared. Anyone with the URL can view or change test records; do not use this demo with sensitive or private company data. The frontend allows the existing Permanent Delete feature but still blocks demo reset. Rate limits are best-effort, per instance and not a substitute for user authentication or isolated data. External OCR can consume API quota.
 
 
 ESG Passport is a **prototype for demonstration and research**. Its current shared-password protection and simulated roles are not sufficient for a public, multi-tenant product handling confidential company records. Deployments intended for real organizations need individual authentication, authorization, tenant isolation, retention controls, data-processing consent and security review. Automated evidence extraction does not amount to verified ESG compliance.

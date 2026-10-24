@@ -82,8 +82,10 @@ Gemini/Grafilab API keys never enter the browser. `/login` redirects to `/`.
 
 Only fictional hackathon data is appropriate because the shared live
 workspace is publicly readable and editable with simulated roles. The
-frontend blocks permanent deletion and sample reset, and enforces
-best-effort per-instance request limits on writes and OCR uploads. These
+frontend allows permanent deletion through the existing FastAPI endpoint,
+blocks sample reset, and enforces best-effort per-instance request limits on
+writes and OCR uploads. Public visitors can permanently delete shared
+fictional records. These
 controls are not production security or abuse prevention. Keep
 `DEMO_ACCESS_ENABLED=true` and the private backend shared key configured;
 **do not** disable the backend access key to remove the browser password.
