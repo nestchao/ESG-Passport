@@ -4,7 +4,7 @@ import {redirect} from 'next/navigation';
 import {getServerDemoConfig} from '../../env-config.mjs';
 export const dynamic='force-dynamic';
 export default async function DemoLogin({searchParams}:{searchParams:Promise<{error?:string;next?:string}>}){
- if(!getServerDemoConfig().enabled)redirect('/');
+ if(!getServerDemoConfig().enabled||getServerDemoConfig().publicLive)redirect('/');
  const {error,next}=await searchParams;
  const loginToken=(await cookies()).get(LOGIN_CSRF_COOKIE)?.value||'';
  return <main className="demo-login"><section className="demo-login-card" aria-labelledby="login-title">
