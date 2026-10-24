@@ -122,11 +122,26 @@ test('passwordless public live mode is enabled without any demo password or sess
  const profile=await proxyBackend(req('/api/backend/profile?period=2026-09',{headers:{'X-Demo-Role':'owner',authorization:'Bearer fake'}}),['profile'],c,fetchSpy);
  assert.equal(profile.status,200);
  assert.equal((await profile.json()).company,'supabase');
- for(const path of ['/documents/id','/demo/reset']){
-  const parts=path.slice(1).split('/');
-  const response=await proxyBackend(req('/api/backend'+path,{method:path.startsWith('/documents')?'DELETE':'POST',headers:{origin},body:'{}'}),parts,c,async()=>{throw Error('destructive mutation must not reach server')});
-  assert.equal(response.status,403);
- }
+ // Permanent deletion must reach the original FastAPI DELETE endpoint.
+ const deleteResult=await proxyBackend(req('/api/backend/documents/id',{
+  method:'DELETE',headers:{origin,'X-Demo-Role':'owner','content-type':'application/json'},body:'{"reason":"delete synthetic test record"}'
+ }),['documents','id'],c,async(target,options)=>{
+  assert.equal(target,'https://backend.example/documents/id');
+  assert.equal(options.method,'DELETE');
+  assert.equal(options.headers.get('X-Demo-Role'),'owner');
+  assert.equal(options.headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);
+  return Response.json({deleted:true});
+ });
+ assert.equal(deleteResult.status,200);
+ assert.equal((await deleteResult.json()).deleted,true);
+ const reset=await proxyBackend(req('/api/backend/demo/reset',{
+  method:'POST',headers:{origin},body:'{}'
+ }),['demo','reset'],c,async()=>{throw Error('reset must not reach server')});
+ assert.equal(reset.status,403);
+ const foreignDelete=await proxyBackend(req('/api/backend/documents/id',{
+  method:'DELETE',headers:{origin:'https://evil.example'},body:'{}'
+ }),['documents','id'],c,async()=>{throw Error('cross-origin deletion must not reach server')});
+ assert.equal(foreignDelete.status,403);
  const denied=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin:'https://evil.example'},body:'{}'}),['documents'],c,async()=>{throw Error('foreign-origin upload must not be forwarded')});
  assert.equal(denied.status,403);
  const form=new FormData();
