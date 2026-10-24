@@ -21,10 +21,8 @@
 | --- | --- |
 | GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) |
 | Live Demo | [Shared fictional workspace](https://esg-passport.replit.app/) |
-| Replit Project / Proof of Use | To confirm; no verified project/history link supplied. |
-| RunPod Endpoint / Proof of Use | No deployed endpoint established in this repository. |
 | Slide Deck | To confirm |
-| Demo Video | To confirm |
+| Demo Video | [ESG-Passport Demo Video](https://youtu.be/UV2Qy3i_0Qg?si=tCxmo2in74DSgRsy) |
 
 Links are configured demonstration addresses, not a guarantee of uptime. Free hosting can require a cold start.
 
