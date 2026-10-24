@@ -7,9 +7,10 @@ export const SESSION_SECONDS=8*60*60;
 export const MAX_PROXY_BYTES=10*1024*1024;
 export function getDemoConfig(environment=process.env){
  const enabled=environment.DEMO_ACCESS_ENABLED==='true';
+ const publicLive=environment.PUBLIC_LIVE_WORKSPACE_ENABLED==='true';
  if(environment.RENDER==='true'&&!enabled)throw Error('Render requires DEMO_ACCESS_ENABLED=true.');
  if(!enabled)return {enabled:false};
- for(const [name,min] of [['DEMO_PASSWORD',16],['DEMO_SESSION_SECRET',32],['BACKEND_SHARED_KEY',32]]){
+ for(const [name,min] of (publicLive?[['BACKEND_SHARED_KEY',32]]:[['DEMO_PASSWORD',16],['DEMO_SESSION_SECRET',32],['BACKEND_SHARED_KEY',32]])){
   if(typeof environment[name]!=='string'||environment[name].length<min)throw Error(`${name} must contain at least ${min} characters.`);
  }
  let backend;try{backend=new URL(environment.BACKEND_INTERNAL_URL);}catch{throw Error('BACKEND_INTERNAL_URL must be an HTTPS origin.');}
@@ -22,7 +23,7 @@ export function getDemoConfig(environment=process.env){
   publicOrigin=parsed.origin;
  }
  if(environment.RENDER==='true'&&!publicOrigin)throw Error('Render requires RENDER_EXTERNAL_URL or DEMO_PUBLIC_ORIGIN for its public origin.');
- return {enabled:true,publicWorkspaceEnabled:environment.PUBLIC_WORKSPACE_ENABLED==='true',publicOrigin,password:environment.DEMO_PASSWORD,secret:environment.DEMO_SESSION_SECRET,backendKey:environment.BACKEND_SHARED_KEY,backendUrl:backend.origin};
+ return {enabled:true,publicLive,publicWorkspaceEnabled:environment.PUBLIC_WORKSPACE_ENABLED==='true',publicOrigin,password:environment.DEMO_PASSWORD,secret:environment.DEMO_SESSION_SECRET,backendKey:environment.BACKEND_SHARED_KEY,backendUrl:backend.origin};
 }
 const signature=(value,config)=>createHmac('sha256',config.secret).update(value).digest('base64url');
 export function createSession(config,now=Math.floor(Date.now()/1000)){
@@ -30,7 +31,7 @@ export function createSession(config,now=Math.floor(Date.now()/1000)){
  return `${value}.${signature(value,config)}`;
 }
 export function verifySession(token,config,now=Math.floor(Date.now()/1000)){
- if(!config.enabled||typeof token!=='string'||token.length>256)return false;
+ if(!config.enabled||config.publicLive||typeof token!=='string'||token.length>256)return false;
  const parts=token.split('.');if(parts.length!==5||parts[0]!=='v1'||!/^\d{1,12}$/.test(parts[1])||!/^\d{1,12}$/.test(parts[2])||!/^[A-Za-z0-9_-]{32}$/.test(parts[3])||!/^[A-Za-z0-9_-]{43}$/.test(parts[4]))return false;
  const expected=signature(parts.slice(0,4).join('.'),config);
  return timingSafeEqual(Buffer.from(parts[4]),Buffer.from(expected))&&Number(parts[1])<=now&&Number(parts[2])>now&&Number(parts[2])-Number(parts[1])===SESSION_SECONDS;
@@ -100,6 +101,14 @@ const loginLocation=(next,error=false)=>'/login'+(error?'?error=1':'')+(next!=='
 export function accessGate(request,config){
  if(!config.enabled)return null;
  const url=new URL(request.url),path=url.pathname;
+ if(config.publicLive){
+  // Public Hackathon deployment: no account, password or session is required.
+  // All database and AI credentials remain server-side behind the proxy key.
+  if(path==='/login'&&['GET','HEAD'].includes(request.method))return redirect(new URL('/',config.publicOrigin||url.origin).href);
+  if(path==='/api/demo/login')return error('Password login is disabled.',404);
+  if(path==='/api/demo/logout')return null;
+  return null;
+ }
  // The public /demo and /ocr screens never use the protected backend.
  // The real workspace at / requires a signed staff session.
  if(['GET','HEAD'].includes(request.method)&&(path==='/demo'||path==='/ocr'||path==='/ocr-assets/pdf.worker.min.mjs'||/^\/demo-assets\/(?:electricity-itemised-001|water-sidebar-001|waste-landscape-001)\.png$/.test(path)))return null;
@@ -140,6 +149,7 @@ async function readBounded(stream,limit){
  const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}return bytes;
 }
 export async function handleLogin(request,config,limiter=loginLimiter){
+ if(config.publicLive)return error('Password login is disabled.',404);
  if(!config.enabled)return redirect('/');
  let password='',next='/',csrf='';
  try{const bytes=await readBounded(request.body,4096);const values=new URLSearchParams(new TextDecoder().decode(bytes));password=values.get('password')||'';next=safeReturnTo(values.get('next'));csrf=values.get('csrf_token')||'';}catch{return redirect('/login?error=1');}
@@ -150,16 +160,38 @@ export async function handleLogin(request,config,limiter=loginLimiter){
  const response=redirect(next);response.headers.set('Set-Cookie',sessionCookie(createSession(config)));return response;
 }
 export function handleLogout(request,config){
+ if(config.publicLive)return redirect('/');
  if(!sameOrigin(request,config))return error('Request origin is not allowed.',403);
  const response=redirect(config.enabled?'/login':'/');response.headers.set('Set-Cookie',sessionCookie('',0));return response;
+}
+// Bounded best-effort per-instance usage controls for public demo writes and AI OCR.
+const publicWriteUsage=new Map();
+let publicGlobalWindow=0,publicGlobalCount=0,publicOcrWindow=0,publicOcrCount=0;
+function limitPublicWrite(request,ocr,now=Date.now()){
+ if(now-publicGlobalWindow>=60_000){publicGlobalWindow=now;publicGlobalCount=0;publicWriteUsage.clear();}
+ if(now-publicOcrWindow>=3_600_000){publicOcrWindow=now;publicOcrCount=0;}
+ if(++publicGlobalCount>40)return true;
+ if(ocr&&++publicOcrCount>24)return true;
+ const ip=request.headers.get('x-forwarded-for')?.split(',')[0].trim()||'anonymous';
+ const hashed=createHash('sha256').update(ip).digest('hex');
+ const usage=publicWriteUsage.get(hashed)||0;
+ publicWriteUsage.set(hashed,usage+1);
+ return usage>=12;
 }
 function validPath(segments){return Array.isArray(segments)&&segments.length>0&&segments.every(segment=>typeof segment==='string'&&segment.length>0&&segment!=='.'&&segment!=='..'&&!/[\x00-\x20\x7f%\\/:?#]/.test(segment));}
 export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  if(!config.enabled)return error('Demo proxy is disabled.',404);
  const isStaff=verifySession(tokenFrom(request),config);
+ if(config.publicLive&&request.method==='DELETE')return error('Permanent deletion is disabled on the public demo.',403);
+ if(config.publicLive&&segments[0]==='demo'&&segments[1]==='reset')return error('Public reset is disabled.',403);
+ if(config.publicLive&&request.method!=='GET'){
+  if(limitPublicWrite(request,segments[0]==='documents'&&segments.length===1&&request.method==='POST')){
+   return Response.json({detail:'Public demo request limit reached. Try again later.'},{status:429,headers:{...headers,'Retry-After':'60'}});
+  }
+ }
  // No anonymous application API calls, even when the legacy public
  // workspace flag remains set on an existing Render Blueprint.
- if(!isStaff)return error('Demo sign-in required.',401);
+ if(!isStaff&&!config.publicLive)return error('Demo sign-in required.',401);
  if(!['GET','POST','PUT','DELETE'].includes(request.method))return error('Method not allowed.',405);
  if(request.method!=='GET'){
   const nativeOrigin=sameOrigin(request,config);

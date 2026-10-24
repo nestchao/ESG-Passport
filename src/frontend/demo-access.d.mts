@@ -1,4 +1,4 @@
-export type DemoConfig = {enabled:false} | {enabled:true;publicWorkspaceEnabled?:boolean;publicOrigin?:string;password:string;secret:string;backendKey:string;backendUrl:string};
+export type DemoConfig = {enabled:false;publicLive?:false} | {enabled:true;publicLive?:boolean;publicWorkspaceEnabled?:boolean;publicOrigin?:string;password?:string;secret?:string;backendKey:string;backendUrl:string};
 export function getDemoConfig(environment?:Record<string,string|undefined>):DemoConfig;
 export function accessGate(request:Request,config:DemoConfig):Response|null;
 export function handleLogin(request:Request,config:DemoConfig,limiter?:(request:Request)=>boolean):Promise<Response>;

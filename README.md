@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="https://esg-passport-web.onrender.com/">Protected ESG Passport</a> ·
+  <a href="https://esg-passport-web.onrender.com/">Passwordless live demo</a> ·
   <a href="https://esg-passport-web.onrender.com/demo">Public fictional demo</a> ·
   <a href="https://esg-passport-web.onrender.com/ocr">Browser OCR</a> ·
   <a href="docs/DEPLOY-RENDER.md">Deployment guide</a>
@@ -68,11 +68,11 @@ flowchart LR
 
 | Route | What you can try | Where the data lives |
 | --- | --- | --- |
-| **[Protected ESG Passport](https://esg-passport-web.onrender.com/)** (`/`) | Sign in as authorized staff; review Supabase records and upload documents using configured Gemini / Grafilab OCR. | Server-side **Supabase PostgreSQL** and **private Supabase Storage**. |
+| **[Passwordless ESG Passport](https://esg-passport-web.onrender.com/)** (`/`) | Open Dashboard directly without a password. Review the shared Supabase demo records and upload fictional bills for configured Gemini / Grafilab OCR. | Server-side **Supabase PostgreSQL** and **private Supabase Storage**. |
 | **[Public fictional demo](https://esg-passport-web.onrender.com/demo)** (`/demo`) | Explore guided sample scenarios without a password or backend account. | Browser-only fictional state; **no Supabase access** or remote AI requests. |
 | **[Browser OCR scanner](https://esg-passport-web.onrender.com/ocr)** (`/ocr`) | Extract and review text from images or PDFs locally in your browser; export a JSON review. | Browser only; **does not create a Supabase record**. |
 
-The homepage `/` and optional `/live` use the existing demo-password session. The owner/clerk role switch is **simulated**, not a real multi-user identity system. Only authorized testers should access Supabase.
+The homepage `/` and alias `/live` are **passwordless** for Hackathon visitors. They use the existing server-only backend key, not browser-held Supabase or AI credentials. This is one shared **fictional** company workspace: visitors can view and edit its data, so never upload real or confidential bills. Owner/clerk roles are simulated. Permanent deletion and demo reset are unavailable to public visitors, and public writes/OCR calls are rate-limited.
 
 ### Example evidence
 
@@ -119,7 +119,7 @@ flowchart TB
     Browser["Next.js + Tailwind CSS frontend"] --> Gate{"Route and session"}
     Gate -->|"Public /demo"| Demo["Fictional browser-only demo"]
 
-    Gate -->|"Signed-in / or /live"| Proxy["Authenticated Next.js API proxy"]
+    Gate -->|"Public / or /live"| Proxy["Server-key Next.js API proxy"]
     Proxy --> API["FastAPI backend"]
     API --> DB[("Supabase PostgreSQL")]
     API --> Files[("Private Supabase Storage")]
@@ -141,7 +141,7 @@ flowchart TB
 | Component | Status / limitation |
 | --- | --- |
 | Monthly record editing, review, versioned history and owner approval | Implemented application behaviour; calculations use explicitly confirmed data. |
-| Supabase persistence | Used by the **signed-in** homepage and `/live`; the public `/demo` never connects to it. |
+| Supabase persistence | Used by the **passwordless** homepage and `/live` through the server-key proxy; `/demo` never connects to it. |
 | Gemini / Grafilab OCR | Real HTTP adapters in the protected backend when configured; availability and accuracy depend on the external providers. |
 | Public demo OCR | Fixed fictional examples—not a live AI request or backend document upload. |
 | Browser OCR scanner | Real client-side OCR, but its JSON export is **not** automatically imported into the ESG workspace. |
@@ -251,6 +251,9 @@ ESG-Passport/
 - [Render deployment guide](docs/DEPLOY-RENDER.md)
 
 ## Limitations
+
+The public interactive workspace is intentionally passwordless and shared. Anyone with the URL can view or change test records; do not use this demo with sensitive or private company data. The frontend denies permanent deletion and resetting; rate limits are best-effort, per instance and not a substitute for user authentication or isolated data. External OCR can consume API quota.
+
 
 ESG Passport is a **prototype for demonstration and research**. Its current shared-password protection and simulated roles are not sufficient for a public, multi-tenant product handling confidential company records. Deployments intended for real organizations need individual authentication, authorization, tenant isolation, retention controls, data-processing consent and security review. Automated evidence extraction does not amount to verified ESG compliance.
 

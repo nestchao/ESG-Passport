@@ -73,32 +73,34 @@ References: https://render.com/docs/blueprint-spec and https://render.com/docs/d
 
 Render automatically provides the frontend RENDER_EXTERNAL_URL used to check login/save origins behind HTTPS termination. If you later use a custom domain, set frontend DEMO_PUBLIC_ORIGIN to that exact HTTPS origin and redeploy. Leave it unset for the normal Render address. Changing DEMO_SESSION_SECRET invalidates existing demo sessions.
 
-### Protected homepage with Supabase + Gemini OCR
+### Passwordless homepage with Supabase + Gemini / Grafilab OCR
 
-Visitors to `/` are redirected to `/login` until they have a valid staff
-session. After login, the original ESG Passport UI runs at `/` (or at the
-optional `/live` alias) against the real Supabase PostgreSQL and private
-Supabase Storage via the authenticated Next.js API proxy.
+The homepage `/` and `/live` now open **without visitor passwords**.
+Next.js proxies requests to FastAPI using the protected **server-only**
+`BACKEND_SHARED_KEY`; the private Supabase database/Storage credentials and
+Gemini/Grafilab API keys never enter the browser. `/login` redirects to `/`.
 
-The backend calls Gemini for protected uploads only when `ESG_OCR_MODE` and
-the corresponding provider API credentials are correctly configured on the
-**backend** Render service. `gemini_grafilab_fallback` can try Grafilab if
-Gemini fails, then use offline OCR; therefore an apparently successful upload
-does **not** prove Gemini was called. Check the document review's OCR engine
-and model metadata before claiming real Gemini success.
+Only fictional hackathon data is appropriate because the shared live
+workspace is publicly readable and editable with simulated roles. The
+frontend blocks permanent deletion and sample reset, and enforces
+best-effort per-instance request limits on writes and OCR uploads. These
+controls are not production security or abuse prevention. Keep
+`DEMO_ACCESS_ENABLED=true` and the private backend shared key configured;
+**do not** disable the backend access key to remove the browser password.
 
-### Password-free fictional demonstration
+For new Blueprint deployments, `PUBLIC_LIVE_WORKSPACE_ENABLED=true` is set
+in the shared environment group and the frontend health check uses `/demo`
+to ensure a 200 response with no auth. `DEMO_PASSWORD` and
+`DEMO_SESSION_SECRET` are not required by the passwordless frontend.
+Remove any old manual secrets from Render only if no other workflows rely on
+them. After updating the Blueprint, ensure the new environment value has
+deployed to the frontend and verify that GET `/` returns 200.
 
-`/demo` remains accessible without login, using three bundled synthetic
-sample documents entirely within the browser. It does not contact Supabase,
-Gemini or Grafilab. `/ocr` is a separate browser OCR scanner and does not
-write to Supabase either.
+The backend calls Gemini OCR on public uploads only when `ESG_OCR_MODE`
+and the provider credentials are correctly set **on Render backend**.
+Grafilab may be used as a fallback; offline OCR may still be used if both
+remote providers fail. Verify the OCR engine/model on a synthetic upload
+before claiming a real Gemini/Grafilab success.
 
-The old anonymous full SQLite workspace is no longer accessible through the
-frontend. New Blueprint settings use `PUBLIC_WORKSPACE_ENABLED=false`; even
-when an older existing service still has it set to true, the frontend rejects
-all anonymous `/api/backend/*` calls and never routes them to `/sandbox`.
-
-Keep `DEMO_ACCESS_ENABLED=true`, the shared backend server key and the
-strong demo password. This hackathon prototype uses simulated staff roles,
-not production-grade authentication; never share the staff password broadly.
+The public `/demo` page stays browser-only with fake sample data and never
+calls Supabase; `/ocr` stays browser-based too.

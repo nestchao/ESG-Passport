@@ -66,10 +66,7 @@ Follow [the Render setup guide](../../docs/DEPLOY-RENDER.md). Hosted mode uses a
 
 ## Password-free synthetic public demo
 
-On Render, visiting `/` without a signed staff session redirects to **`/login`**.
-Signing in opens the real Supabase-backed ESG Passport at `/` (the existing
-`/live` alias also works). To explore without a password, open the browser-only
-fictional example at `/demo`; it never calls the real backend.
+On Render, `/` opens the **real Supabase-backed ESG Passport without a password**; `/live` is an alias. The full workspace shares a fictional company and is publicly readable and writable (subject to best-effort limits), so never upload confidential documents. `/demo` is still a browser-only fictional example that does not call the backend.
 
 The public route includes three locally bundled, generated test images from
 `src/ai/synthetic_dataset` (electricity, water, waste). The page simulates
@@ -87,19 +84,23 @@ never provided to the public page. Do **not** remove DEMO_PASSWORD or disable
 DEMO_ACCESS_ENABLED in Render. The public demo is not a replacement for real
 production authentication, audit, or verified ESG claims.
 
-## Signed-in ESG Passport homepage (Supabase + configured Gemini OCR)
+## Passwordless live ESG Passport (Supabase + Gemini / Grafilab OCR)
 
-The hosted `/` page requires the signed staff demo session. The Next.js
-`/api/backend/*` proxy sends **authenticated** requests to FastAPI, backed by
-Supabase PostgreSQL and private Supabase Storage. New protected document
-uploads use the server's configured OCR mode, including Gemini and optional
-Grafilab fallback; users must check and confirm the extracted fields.
+The hosted homepage `/` and alias `/live` open immediately without a login.
+The Next.js `/api/backend/*` proxy sends requests to FastAPI using only its
+**server-side shared key**. Supabase PostgreSQL and private Supabase Storage
+remain accessible **only through the server**. OCR uses the backend's configured
+Gemini/Grafilab/fallback mode and extracted fields still require manual review.
 
-Anonymous API requests are rejected, even if an existing Render service still
-sets the legacy `PUBLIC_WORKSPACE_ENABLED=true` value. New Blueprint
-configurations disable that option. `/demo` is a separate browser-only
-fictional experience, and `/ocr` is client-side OCR without Supabase access.
-The old shared in-memory SQLite sandbox is no longer exposed by the frontend.
+**Security trade-off:** the live demonstration workspace is shared. Anonymous
+visitors can read, create, edit and approve *fictional test records* using
+simulated roles. The proxy rejects permanent DELETE and demo/reset actions and
+uses per-instance, best-effort request limits for public writes and AI OCR.
+These limits are not real identity or tenant authorization and do not protect
+private/customer records. Never put confidential documents in the demo.
+
+`/demo` remains a self-contained browser-only illustration with no Supabase
+access; `/ocr` is client-side OCR without cloud storage.
 
 ## Local browser OCR scanner (public `/ocr`)
 
@@ -125,10 +126,8 @@ The anonymous access gate allows only `/ocr` and the bundled PDF worker
 asset required for scanning, in addition to previously approved public
 paths; protected real backend and customer-sharing routes are unchanged.
 
-## Optional signed-in alias (`/live`)
+## Alternative route (`/live`)
 
-`/live` remains a protected alias to the same Supabase-backed workspace.
-`/` and `/live` both require a staff session. The demo's shared password
-and simulated roles are not production-grade user authentication or tenancy.
-Do not give the shared password to anonymous visitors or use this deployment
-for confidential real-customer documents.
+`/live` shows the same passwordless Supabase-backed workspace as `/`.
+`/login` redirects to the homepage. No visitor password is necessary.
+The backend-to-backend secret is never exposed in a browser response.

@@ -11,6 +11,6 @@ export const dynamic='force-dynamic';
 export default async function LiveWorkspace(){
  const config=getServerDemoConfig();
  const token=(await cookies()).get(SESSION_COOKIE)?.value||'';
- if(!config.enabled||!verifySession(token,config))redirect('/login?next=%2Flive');
+ if(!config.enabled||(!config.publicLive&&!verifySession(token,config)))redirect('/login?next=%2Flive');
  return <ESGPassport/>;
 }
