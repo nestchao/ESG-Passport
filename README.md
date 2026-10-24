@@ -19,10 +19,8 @@
 
 | Resource | Link / status |
 | --- | --- |
-| GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) — currently private; authorised access required. |
-| Live Demo | [Shared fictional workspace](https://esg-passport-web.onrender.com/) |
-| Browser Demo | [Browser-only fictional demo](https://esg-passport-web.onrender.com/demo) |
-| Browser OCR | [Local browser OCR tool](https://esg-passport-web.onrender.com/ocr) |
+| GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) |
+| Live Demo | [Shared fictional workspace](https://esg-passport.replit.app/) |
 | Replit Project / Proof of Use | To confirm; no verified project/history link supplied. |
 | RunPod Endpoint / Proof of Use | No deployed endpoint established in this repository. |
 | Slide Deck | To confirm |
@@ -64,8 +62,8 @@ ESG Passport combines document OCR, structured activity review, SEDG requirement
 | Backend | Python 3.12, FastAPI, Pydantic, SQLAlchemy, Alembic |
 | Database / Files | Supabase PostgreSQL and private object storage |
 | AI / OCR | Optional Gemini and Grafilab; local CPU RapidOCR; separate Tesseract.js/PDF.js browser tool |
-| Hosting | Render frontend/API services |
-| Replit / RunPod | Usage evidence must be confirmed; not represented as verified hosting or GPU execution |
+| Hosting | Replit live demo |
+| Platform evidence | Replit project/use evidence and any applicable RunPod GPU evidence must be supplied separately |
 
 ### Core Workflow
 
@@ -131,7 +129,6 @@ The hosted live workspace is **passwordless, shared and fictional**. Visitors ca
 ├── tests/                        # Workflow and generator tests
 ├── .env.example                  # Safe configuration template
 ├── .replit                       # Starter placeholder
-├── render.yaml                   # Hosting configuration
 ├── requirements.txt              # Backend/workflow dependencies
 └── LICENSE                       # Apache-2.0
 ```
@@ -219,9 +216,9 @@ Open `http://127.0.0.1:3000`, or `/demo` for browser-only fixtures. Remote OCR i
 
 ### Deployment
 
-Follow [docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md) and `render.yaml`. Frontend/API deploy independently; local `.env` is not uploaded automatically. Hosted protection uses `DEMO_ACCESS_ENABLED`, a server-only `BACKEND_SHARED_KEY` and configured origins. Current Blueprint public live mode is passwordless; this is not production authentication.
+The live application is available on [Replit](https://esg-passport.replit.app/). Configure private credentials through Replit Secrets rather than committing `.env`. Set the frontend/backend addresses and allowed origins for the deployed topology. Keep database, Supabase and AI provider credentials server-side. If using the protected API proxy, both services must share the server-only `BACKEND_SHARED_KEY`. The shared fictional workspace and simulated roles are not production authentication.
 
-The `.replit` file is a **starter placeholder**, not a working application launch configuration or proof of competition-required Replit use. Render deployment does not replace that evidence.
+The repository's `.replit` file is a **starter placeholder**; it does not reproduce the live deployment configuration. Document the actual Replit build/run settings and provide the team's project/history or permitted proof-of-use evidence separately.
 
 ---
 
@@ -372,7 +369,7 @@ A proposed business direction is an SME subscription or partner-distributed Orby
 
 **Competition requirement:** the supplied Participant Handbook requires Replit as part of the solution and actual project/use evidence in the Technical & Tools Declaration.
 
-**Current documentation status:** the repository contains a starter `.replit` placeholder. It does not establish a configured application launch, deployment or verified Replit use. The live links above point to Render. The team must add its actual Replit project/history or permitted proof-of-use evidence before presenting this requirement as complete.
+**Current documentation status:** the team-provided [live demo](https://esg-passport.replit.app/) points to Replit. The repository's `.replit` remains a starter placeholder. Add the team's project/history or permitted proof-of-use evidence to the Technical & Tools Declaration before presenting the requirement as complete.
 
 ## How We Use RunPod
 
