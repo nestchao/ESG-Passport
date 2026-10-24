@@ -182,7 +182,6 @@ function validPath(segments){return Array.isArray(segments)&&segments.length>0&&
 export async function proxyBackend(request,segments,config,fetchImpl=fetch){
  if(!config.enabled)return error('Demo proxy is disabled.',404);
  const isStaff=verifySession(tokenFrom(request),config);
- if(config.publicLive&&request.method==='DELETE')return error('Permanent deletion is disabled on the public demo.',403);
  if(config.publicLive&&segments[0]==='demo'&&segments[1]==='reset')return error('Public reset is disabled.',403);
  if(config.publicLive&&request.method!=='GET'){
   if(limitPublicWrite(request,segments[0]==='documents'&&segments.length===1&&request.method==='POST')){
