@@ -62,8 +62,8 @@ ESG Passport combines document OCR, structured activity review, SEDG requirement
 | Backend | Python 3.12, FastAPI, Pydantic, SQLAlchemy, Alembic |
 | Database / Files | Supabase PostgreSQL and private object storage |
 | AI / OCR | Optional Gemini and Grafilab; local CPU RapidOCR; separate Tesseract.js/PDF.js browser tool |
-| Hosting | Replit live demo; optional Render frontend/API deployment configuration in the repository |
-| Replit / RunPod | Usage evidence must be confirmed; not represented as verified hosting or GPU execution |
+| Hosting | Replit live demo |
+| Platform evidence | Replit project/use evidence and any applicable RunPod GPU evidence must be supplied separately |
 
 ### Core Workflow
 
@@ -129,7 +129,6 @@ The hosted live workspace is **passwordless, shared and fictional**. Visitors ca
 ├── tests/                        # Workflow and generator tests
 ├── .env.example                  # Safe configuration template
 ├── .replit                       # Starter placeholder
-├── render.yaml                   # Hosting configuration
 ├── requirements.txt              # Backend/workflow dependencies
 └── LICENSE                       # Apache-2.0
 ```
@@ -217,9 +216,9 @@ Open `http://127.0.0.1:3000`, or `/demo` for browser-only fixtures. Remote OCR i
 
 ### Deployment
 
-Follow [docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md) and `render.yaml`. Frontend/API deploy independently; local `.env` is not uploaded automatically. Hosted protection uses `DEMO_ACCESS_ENABLED`, a server-only `BACKEND_SHARED_KEY` and configured origins. Current Blueprint public live mode is passwordless; this is not production authentication.
+The live application is available on [Replit](https://esg-passport.replit.app/). Configure private credentials through Replit Secrets rather than committing `.env`. Set the frontend/backend addresses and allowed origins for the deployed topology. Keep database, Supabase and AI provider credentials server-side. If using the protected API proxy, both services must share the server-only `BACKEND_SHARED_KEY`. The shared fictional workspace and simulated roles are not production authentication.
 
-The `.replit` file is a **starter placeholder**, not a working application launch configuration or proof of competition-required Replit use. Render deployment does not replace that evidence.
+The repository's `.replit` file is a **starter placeholder**; it does not reproduce the live deployment configuration. Document the actual Replit build/run settings and provide the team's project/history or permitted proof-of-use evidence separately.
 
 ---
 
