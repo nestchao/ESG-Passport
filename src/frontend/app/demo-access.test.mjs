@@ -92,6 +92,58 @@ test('protected homepage uses Supabase backend with signed session only',async()
  assert.equal(accessGate(req('/api/demo/logout'),sandbox),null);
 });
 
+
+test('passwordless public live mode is enabled without any demo password or session secret',async()=>{
+ const c=getDemoConfig({
+  DEMO_ACCESS_ENABLED:'true',
+  PUBLIC_LIVE_WORKSPACE_ENABLED:'true',
+  BACKEND_SHARED_KEY:env.BACKEND_SHARED_KEY,
+  BACKEND_INTERNAL_URL:env.BACKEND_INTERNAL_URL,
+  RENDER:'true',RENDER_EXTERNAL_URL:origin
+ });
+ assert.equal(c.enabled,true);
+ assert.equal(c.publicLive,true);
+ assert.equal(accessGate(req('/'),c),null);
+ assert.equal(accessGate(req('/?period=2026-09'),c),null);
+ assert.equal(accessGate(req('/live'),c),null);
+ assert.equal(accessGate(req('/demo'),c),null);
+ assert.equal(accessGate(req('/login'),c).headers.get('location'),origin+'/');
+ assert.equal(accessGate(req('/api/backend/profile'),c),null);
+ assert.equal((await handleLogin(req('/api/demo/login',{method:'POST',headers:{origin},body:'password=ignored'}),c)).status,404);
+ assert.equal((await handleLogout(req('/api/demo/logout',{method:'POST'}),c)).headers.get('location'),'/');
+ assert.equal(verifySession('fake-session',c),false);
+ const fetchSpy=async(target,options)=>{
+  assert.equal(target,'https://backend.example/profile?period=2026-09');
+  assert.equal(options.headers.get('X-Demo-Backend-Key'),env.BACKEND_SHARED_KEY);
+  assert.equal(options.headers.has('cookie'),false);
+  assert.equal(options.headers.has('authorization'),false);
+  return Response.json({company:'supabase',ocr:'configured-server-side'});
+ };
+ const profile=await proxyBackend(req('/api/backend/profile?period=2026-09',{headers:{'X-Demo-Role':'owner',authorization:'Bearer fake'}}),['profile'],c,fetchSpy);
+ assert.equal(profile.status,200);
+ assert.equal((await profile.json()).company,'supabase');
+ for(const path of ['/documents/id','/demo/reset']){
+  const parts=path.slice(1).split('/');
+  const response=await proxyBackend(req('/api/backend'+path,{method:path.startsWith('/documents')?'DELETE':'POST',headers:{origin},body:'{}'}),parts,c,async()=>{throw Error('destructive mutation must not reach server')});
+  assert.equal(response.status,403);
+ }
+ const denied=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin:'https://evil.example'},body:'{}'}),['documents'],c,async()=>{throw Error('foreign-origin upload must not be forwarded')});
+ assert.equal(denied.status,403);
+ const form=new FormData();
+ form.set('file',new Blob(['public synthetic document'],{type:'image/png'}),'fictional.png');
+ form.set('type','electricity');
+ form.set('period','2026-09');
+ const upload=await proxyBackend(req('/api/backend/documents',{method:'POST',headers:{origin,'X-Demo-Role':'clerk'},body:form}),['documents'],c,async(target,options)=>{
+  assert.equal(target,'https://backend.example/documents');
+  const body=await new Request(target,{method:'POST',headers:options.headers,body:options.body}).formData();
+  assert.equal(body.get('type'),'electricity');
+  assert.equal(body.get('period'),'2026-09');
+  assert.equal(body.get('file').name,'fictional.png');
+  return Response.json({status:'needs_review'}, {status:201});
+ });
+ assert.equal(upload.status,201);
+});
+
 test('login throttling logout and origin checks',async()=>{
  const limiter=createLoginLimiter();const login=password=>req('/api/demo/login?next=https://evil.example',{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password})});
  const bad=await handleLogin(login('wrong'),cfg(),limiter);assert.equal(bad.status,303);assert.equal(bad.headers.get('location'),'/login?error=1');assert.equal(bad.headers.has('set-cookie'),false);
