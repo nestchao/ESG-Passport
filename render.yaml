@@ -5,7 +5,7 @@ envVarGroups:
     envVars:
       - key: DEMO_ACCESS_ENABLED
         value: "true"
-      # Disable legacy public SQLite sandbox; the homepage now requires staff login.
+      # Keep the legacy SQLite sandbox disabled; the public homepage uses Supabase.
       - key: PUBLIC_WORKSPACE_ENABLED
         value: "false"
       # Visitors can use the live ESG demo without a password. Backend key stays private.
