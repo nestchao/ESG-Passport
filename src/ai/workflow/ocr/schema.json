@@ -1,0 +1,99 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "text",
+    "fields",
+    "uncertainties",
+    "requires_human_review"
+  ],
+  "properties": {
+    "text": {
+      "type": "string"
+    },
+    "requires_human_review": {
+      "type": "boolean",
+      "const": true
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "value",
+          "unit",
+          "period_start",
+          "period_end",
+          "evidence_text"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "purchased_electricity",
+              "electricity_previous_reading",
+              "electricity_current_reading",
+              "maximum_demand",
+              "water_consumption",
+              "water_previous_reading",
+              "water_current_reading",
+              "reading_type",
+              "petrol_consumption",
+              "diesel_consumption",
+              "fuel_unit_price",
+              "fuel_amount",
+              "rounded_total",
+              "cash_paid",
+              "change",
+              "amount_due",
+              "gross_weight",
+              "tare_weight",
+              "waste_transferred",
+              "waste_unit_price",
+              "waste_charge",
+              "declared_destination"
+            ]
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

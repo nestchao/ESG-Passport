@@ -1,13 +1,14 @@
 # AI module
 
 Application code for document extraction and SEDG question mapping belongs here.
-The offline workflow core is available; live OCR adapters, authenticated storage
-and the review UI still require application integration.
+The workflow core and optional OCR fallback adapters are available; backend/UI
+connections and authenticated storage still require application integration.
 
 - [synthetic_generator](synthetic_generator/README.md): offline four-category document generator, capture effects, optional natural print wear and validation.
 - [synthetic_dataset](synthetic_dataset/README.md): 360 fictional images with JSON field/evidence labels, split metadata and provenance.
 - [staff records](workflow/fixtures/staff_records/README.md): supplemental fictional manual register; low-strength self-declared evidence, separate from OCR benchmark images.
 - [workflow](workflow/README.md): four-stage ingestion, reviewed SEDG forms, matching, controlled preparation and approval/export core.
+- [OCR fallback](workflow/ocr/README.md): Gemini to local RapidOCR, with optional budget-controlled Grafilab vision fallback.
 
 Automated generator checks are in `tests/test_synthetic_generator.py`. The generator has its own minimal dependency files and makes no API calls.
 

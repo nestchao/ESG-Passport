@@ -1,8 +1,9 @@
 # Reviewed SEDG preparation workflow
 
-Offline application core for four stages. No API calls, automatic provider fallback,
-or CMM website submission. A frontend/backend must connect real upload/OCR adapters
-and enforce authentication, roles, storage/privacy and authenticated audit events.
+Application core for four stages, with optional [OCR fallback adapters](ocr/README.md).
+Offline demos make no API calls; the OCR runtime can use an authorised cloud chain
+or local CPU extraction. There is no CMM website submission. The frontend/backend
+must connect the adapters and enforce authentication, roles, storage/privacy and audit events.
 The supplied walkthrough uses fictional documents and **simulated** human actions.
 
 ## Layout and stage boundaries
@@ -60,8 +61,9 @@ are explicitly simulated. It deliberately leaves partial-year and source gaps.
 It is an integration fixture, not an OCR accuracy result or independent benchmark.
 
 The saved-OCR ingestion contract accepts adapter-supplied quantities, metric IDs,
-units, period, organisation/site, and page/source text. Live Gemini/RapidOCR adapters,
-PDF parsing and a review UI are not included in this offline core. Keyword cues
+units, period, organisation/site, and page/source text. Optional Gemini, Grafilab and
+RapidOCR adapters now live in `ocr/`; backend/UI integration, PDF parsing and the
+reviewed OCR-to-activity bridge are still pending. Keyword cues
 are simple inspectable matches, not a full clause parser or causal explanation.
 
 ## Security and audit boundary
