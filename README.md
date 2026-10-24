@@ -21,10 +21,8 @@
 | --- | --- |
 | GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) |
 | Live Demo | [Shared fictional workspace](https://esg-passport.replit.app/) |
-| Replit Project / Proof of Use | To confirm; no verified project/history link supplied. |
-| RunPod Endpoint / Proof of Use | No deployed endpoint established in this repository. |
-| Slide Deck | To confirm |
-| Demo Video | To confirm |
+| Slide Deck | [Pitch Deck (PDF)](submission/SDC2026_Kopi-PasteCoders_PitchDeck.pdf) |
+| Demo Video | [ESG-Passport Demo Video](https://youtu.be/UV2Qy3i_0Qg?si=tCxmo2in74DSgRsy) |
 
 Links are configured demonstration addresses, not a guarantee of uptime. Free hosting can require a cold start.
 
@@ -365,11 +363,15 @@ A proposed business direction is an SME subscription or partner-distributed Orby
 
 ---
 
-## How We Use Replit
+## How We Use Replit (Required)
 
-**Competition requirement:** the supplied Participant Handbook requires Replit as part of the solution and actual project/use evidence in the Technical & Tools Declaration.
+Our team used Replit to develop, preview, test, and deploy ESG-Passport.
 
-**Current documentation status:** the team-provided [live demo](https://esg-passport.replit.app/) points to Replit. The repository's `.replit` remains a starter placeholder. Add the team's project/history or permitted proof-of-use evidence to the Technical & Tools Declaration before presenting the requirement as complete.
+- **Development:** Used the Replit workspace to develop and test the Next.js frontend and FastAPI backend.
+- **Hosting:** Published the application using Replit Deployments, accessible at [ESG-Passport Live Demo](https://esg-passport.replit.app/).
+- **Configuration:** Application environment variables and credentials are managed through Replit's environment settings.
+
+📄 **Proof of Use:** [SDC2026_Kopi-PasteCoders_Replit_POU.pdf](submission/SDC2026_Kopi-PasteCoders_Replit_POU.pdf)
 
 ## How We Use RunPod
 
