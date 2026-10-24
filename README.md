@@ -19,7 +19,7 @@
 
 | Resource | Link / status |
 | --- | --- |
-| GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) — currently private; authorised access required. |
+| GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) |
 | Live Demo | [Shared fictional workspace](https://esg-passport.replit.app/) |
 | Replit Project / Proof of Use | To confirm; no verified project/history link supplied. |
 | RunPod Endpoint / Proof of Use | No deployed endpoint established in this repository. |
