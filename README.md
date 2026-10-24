@@ -20,7 +20,7 @@
 | Resource | Link / status |
 | --- | --- |
 | GitHub Repository | [ESG Passport](https://github.com/nestchao/ESG-Passport) — currently private; authorised access required. |
-| Live Demo | [Shared fictional workspace](https://esg-passport-web.onrender.com/) |
+| Live Demo | [Shared fictional workspace](https://esg-passport.replit.app/) |
 | Browser Demo | [Browser-only fictional demo](https://esg-passport-web.onrender.com/demo) |
 | Browser OCR | [Local browser OCR tool](https://esg-passport-web.onrender.com/ocr) |
 | Replit Project / Proof of Use | To confirm; no verified project/history link supplied. |
@@ -372,7 +372,7 @@ A proposed business direction is an SME subscription or partner-distributed Orby
 
 **Competition requirement:** the supplied Participant Handbook requires Replit as part of the solution and actual project/use evidence in the Technical & Tools Declaration.
 
-**Current documentation status:** the repository contains a starter `.replit` placeholder. It does not establish a configured application launch, deployment or verified Replit use. The live links above point to Render. The team must add its actual Replit project/history or permitted proof-of-use evidence before presenting this requirement as complete.
+**Current documentation status:** the team-provided [live demo](https://esg-passport.replit.app/) points to Replit; the separate browser demo and browser OCR links point to Render. The repository's `.replit` remains a starter placeholder. Add the team's project/history or permitted proof-of-use evidence to the Technical & Tools Declaration before presenting the requirement as complete.
 
 ## How We Use RunPod
 
