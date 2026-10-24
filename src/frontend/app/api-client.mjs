@@ -6,7 +6,12 @@ function errorMessage(payload,status){
     const field=Array.isArray(item.loc)?item.loc.filter(part=>!['body','query','path'].includes(part)).join('.'):item.field;
     return `${field?`${field}: `:''}${item.msg||item.message||'Invalid value.'}`;
   }).join(' · ');
-  if(typeof detail==='string')return detail;
+  if(typeof detail==='string'){
+    if(status===403&&detail==='Permanent deletion is disabled on the public demo.'){
+      return 'The server still applies the older public-demo deletion restriction. This is a server-version issue, not a record permission or reference error. Reload the page; if it persists, the frontend deployment must be updated to the main version that restores deletion.';
+    }
+    return detail;
+  }
   if(detail?.message)return `${detail.field?`${detail.field}: `:''}${detail.message}`;
   return status===403?'This simulated role cannot perform this action.':status===409?'The draft changed. Reopen it before continuing.':status===503?'Backend storage is unavailable. Configure the backend Supabase settings, restart it, and retry.':`The backend could not complete this action (HTTP ${status}). Retry or check the backend setup.`;
 }

@@ -2,6 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApiClient } from './api-client.mjs';
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+
+test('legacy public-demo delete restriction explains deployment mismatch without bypassing 403',async()=>{
+ const api=createApiClient({fetchImpl:async()=>json({detail:'Permanent deletion is disabled on the public demo.'},403)});
+ await assert.rejects(api.request('/documents/fictional',{method:'DELETE',body:JSON.stringify({expected_version:1})}),error=>{
+  assert.equal(error.status,403);
+  assert.match(error.message,/server-version issue/);
+  assert.match(error.message,/deployment must be updated/);
+  return true;
+ });
+});
+
+test('ordinary deletion permissions and evidence conflicts keep their backend explanation',async()=>{
+ for(const [status,message] of [[403,'Only the Owner can perform this action.'],[409,'This record belongs to an approved customer Passport. Archive it instead.']]){
+  const api=createApiClient({fetchImpl:async()=>json({detail:message},status)});
+  await assert.rejects(api.request('/documents/fictional',{method:'DELETE'}),error=>error.status===status&&error.message===message);
+ }
+});
 test('JSON requests carry the simulated role and no credentials',async()=>{
  let call;const api=createApiClient({baseUrl:'http://localhost:8000/',fetchImpl:async(...args)=>{call=args;return json({ok:true});}});
  assert.deepEqual(await api.request('/profile/recalculate',{method:'POST',body:'{}'},'clerk'),{ok:true});

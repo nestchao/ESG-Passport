@@ -100,6 +100,24 @@ def test_owner_declaration_references_block_deletion_across_months(workspace):
     assert get(client, f'/documents/{doc["id"]}')['id'] == doc['id']
 
 
+def test_historical_declaration_reference_remains_protected_and_explains_why(workspace):
+    client, _, storage, _ = workspace
+    first = client.put('/declarations/G1.1', headers=OWNER, json={
+        'period': '2026-12', 'answer': {'directors': 2}, 'evidence_ids': ['doc-water']})
+    assert first.status_code == 200, first.text
+    latest = client.put('/declarations/G1.1', headers=OWNER, json={
+        'period': '2026-12', 'answer': {'directors': 2}, 'evidence_ids': []})
+    assert latest.status_code == 200, latest.text
+    doc = get(client, '/documents/doc-water')
+    originals = dict(storage.files)
+    response = delete(client, doc)
+    assert response.status_code == 409
+    assert 'Historical versions retain their evidence' in response.json()['detail']
+    assert 'Archive' in response.json()['detail']
+    assert storage.files == originals
+    assert get(client, '/documents/doc-water')['id'] == doc['id']
+
+
 def test_storage_failure_rolls_back_record_deletion(workspace, monkeypatch):
     client, _, storage, _ = workspace
     doc = get(client, '/documents/doc-water')

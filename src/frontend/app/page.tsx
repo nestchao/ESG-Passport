@@ -8,6 +8,7 @@ import { RoleSwitcher } from './role-switcher';
 import { customerPortalMessage } from './presentation.mjs';
 import { replaceRequest, saveQuestionReview, loadApproval } from './request-updates.mjs';
 import { apiRequest, apiPreview } from './api-client.mjs';
+import { refreshAfterRecordChange } from './record-mutations.mjs';
 import { RecordFields } from './record-fields-form';
 import { normaliseActivities, validateActivities, categoryLabel, cleanDecimal, reclassifyActivities, unclassifiedWasteTransferRows } from './record-fields.mjs';
 import { approvalKey, declarationKey, questionDraftChanged, createDraftNavigator, warnBeforeUnload } from './draft-state.mjs';
@@ -262,9 +263,9 @@ export default function Home() {
   const shownDocuments=recordView==='archived'?archivedDocuments:documents;
   function openArchive(doc:Json){navigate(()=>{setArchiveTarget(doc);setModal('archive-record');setError('');});}
   function openDelete(doc:Json){navigate(()=>{setArchiveTarget(doc);setDeleteConfirmation('');setModal('delete-record');setError('');});}
-  async function deleteRecord(){if(!archiveTarget||deleteConfirmation!=='DELETE'||role!=='owner')return;await act('Deleting record',async()=>{await apiAction(`/documents/${archiveTarget.id}`,{method:'DELETE',body:JSON.stringify({expected_version:archiveTarget.version})});await refresh();setArchiveRetry(n=>n+1);setArchiveTarget(null);setDeleteConfirmation('');setModal(null);setNotice('Record and source file permanently deleted. The action is recorded in workspace history.');});}
-  async function archiveRecord(){if(!archiveTarget)return;await act('Archiving record',async()=>{await apiAction(`/documents/${archiveTarget.id}/archive`,{method:'POST',body:JSON.stringify({expected_version:archiveTarget.version})});await refresh();setArchiveRetry(n=>n+1);setModal(null);setNotice('Record archived. Previous approved packs remain unchanged.');});}
-  async function restoreRecord(doc:Json){await act('Restoring record',async()=>{const restored=await apiAction(`/documents/${doc.id}/restore`,{method:'POST',body:JSON.stringify({expected_version:doc.version})});if(modal==='document'&&detail?.id===restored.id){setDetail(restored);setRecordConflict(false);}await refresh();setArchiveRetry(n=>n+1);setNotice('Record restored. Review and confirm it before it enters calculations.');});}
+  async function deleteRecord(){if(!archiveTarget||deleteConfirmation!=='DELETE'||role!=='owner')return;await act('Deleting record',async()=>{await apiAction(`/documents/${archiveTarget.id}`,{method:'DELETE',body:JSON.stringify({expected_version:archiveTarget.version})});setArchiveRetry(n=>n+1);setArchiveTarget(null);setDeleteConfirmation('');setModal(null);setNotice('Record and source file permanently deleted. The action is recorded in workspace history.');await refreshAfterRecordChange(refresh,setError);});}
+  async function archiveRecord(){if(!archiveTarget)return;await act('Archiving record',async()=>{await apiAction(`/documents/${archiveTarget.id}/archive`,{method:'POST',body:JSON.stringify({expected_version:archiveTarget.version})});setArchiveRetry(n=>n+1);setArchiveTarget(null);setModal(null);setNotice('Record archived. Previous approved packs remain unchanged.');await refreshAfterRecordChange(refresh,setError);});}
+  async function restoreRecord(doc:Json){await act('Restoring record',async()=>{const restored=await apiAction(`/documents/${doc.id}/restore`,{method:'POST',body:JSON.stringify({expected_version:doc.version})});if(modal==='document'&&detail?.id===restored.id){setDetail(restored);setRecordConflict(false);}setArchiveRetry(n=>n+1);setNotice('Record restored. Review and confirm it before it enters calculations.');await refreshAfterRecordChange(refresh,setError);});}
   function reloadRecord(){if(!detail)return;navigate(()=>{void loadDocument(detail,requestReturn);},{dirty:documentDirty,discard:()=>{}});}
   function sectionNotice(key:WorkspaceSection,label:string){
     const state=sectionStates[key];
@@ -345,17 +346,22 @@ export default function Home() {
         if(!metadataChanged||confirmed)saved=await apiAction(`/documents/${detail.id}/activities`,{method:'PUT',body:JSON.stringify({confirmed,activities,expected_version:saved.version})});
       }catch(e:any){if(e.fieldErrors){setRecordErrors(e.fieldErrors);focusRecordError(e.fieldErrors);}throw e;}
       setDetail(saved);recordInitial.current=structuredClone(activityRows);documentMetaInitial.current={...documentMeta};setRecordConflict(false);
-      await refresh();setArchiveRetry(n=>n+1);
-      if(parent){const updated=await apiAction(`/questionnaires/${parent.request.id}`);acceptRequest(updated);setModal(parent.stage);setTab('Customer requests');setRequestReturn(null);}else setModal(null);
       setNotice(confirmed?'Record confirmed. Affected monthly profiles are updated.':'Changes saved. Review and confirm this record before it enters calculations.');
+      setArchiveRetry(n=>n+1);
+      if(!parent)setModal(null);
+      await refreshAfterRecordChange(async()=>{
+        await refresh();
+        if(parent){const updated=await apiAction(`/questionnaires/${parent.request.id}`);acceptRequest(updated);setModal(parent.stage);setTab('Customer requests');setRequestReturn(null);}
+      },setError);
     });
   }
   function showPack(t:string){navigate(()=>{void act('Opening approved pack',async()=>{const p=await apiAction(`/shares/${encodeURIComponent(t)}`);setToken(t);setPack(p);setModal('pack');});});}
   async function upload(){await act('Uploading evidence',async()=>{
     if(!pendingFile)throw Error('Choose a supporting document first.');
     const data=new FormData();data.append('file',pendingFile);data.append('type',sourceType);data.append('period',selectedMonth);
-    const d=await apiAction('/documents',{method:'POST',body:data});setPendingFile(null);setSourceType('electricity');await refresh();
+    const d=await apiAction('/documents',{method:'POST',body:data});setPendingFile(null);setSourceType('electricity');
     await loadDocument(d,null);setNotice(d.extraction?.waste_transfer_candidate?'Net transfer weight detected. Choose the correct ESG waste category using supporting evidence and match the reporting month before confirming.':d.extraction?.activities?.length?'OCR candidates pre-filled. Check every value against the original, then confirm.':'Record stored. OCR could not reliably extract quantities; enter them from the source and confirm.');
+    await refreshAfterRecordChange(refresh,setError);
   });}
   function requestNotices(){return detail&&<RequestRecoveryNotice request={detail} shares={shares} role={role} conflict={requestConflict} busy={!!busy} onReload={reloadLatestAnswers} onOpenPack={showPack}/>;}
   function sourceLink(id:string){const doc=documents.find(d=>String(d.id)===String(id));return <button key={id} className="evidence-link" onClick={()=>openDocument(doc||{id})}><FileText size={14}/>{doc?.name||id}<ArrowUpRight size={12}/></button>;}

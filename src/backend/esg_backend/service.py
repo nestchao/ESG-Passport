@@ -275,7 +275,7 @@ class Workspace:
         for declaration in self.db.scalars(select(Declaration).where(
                 Declaration.company_id == self.settings.company_id)):
             if document_id in (declaration.evidence_ids or []):
-                raise HTTPException(409, 'An owner declaration references this record. Remove that reference before deleting, or archive the record.')
+                raise HTTPException(409, 'An owner declaration version references this record. Historical versions retain their evidence, even if a newer declaration removes the reference. Archive the record instead.')
         period, path, mime, name = doc.period, doc.object_path, doc.mime_type, doc.name
         original = self.storage.download(path)
         # Explicitly remove revisions; SQLite tests may not enable FK cascades,
