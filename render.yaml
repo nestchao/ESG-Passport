@@ -1,4 +1,4 @@
-# Free, synthetic hackathon demo. Enter secrets in Render, never in this file.
+# Passwordless public hackathon demo with server-side Supabase and OCR. Never commit secrets.
 # Both services watch main. Root directories limit rebuilds to their own code.
 envVarGroups:
   - name: esg-passport-demo-access
@@ -8,6 +8,9 @@ envVarGroups:
       # Disable legacy public SQLite sandbox; the homepage now requires staff login.
       - key: PUBLIC_WORKSPACE_ENABLED
         value: "false"
+      # Visitors can use the live ESG demo without a password. Backend key stays private.
+      - key: PUBLIC_LIVE_WORKSPACE_ENABLED
+        value: "true"
       - key: BACKEND_SHARED_KEY
         generateValue: true
 
@@ -53,7 +56,7 @@ services:
     rootDir: src/frontend
     buildCommand: npm ci && npm run build
     startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
-    healthCheckPath: /login
+    healthCheckPath: /demo
     envVars:
       - fromGroup: esg-passport-demo-access
       - key: NODE_VERSION
@@ -62,7 +65,3 @@ services:
         value: /api/backend
       - key: BACKEND_INTERNAL_URL
         sync: false
-      - key: DEMO_PASSWORD
-        sync: false
-      - key: DEMO_SESSION_SECRET
-        generateValue: true
